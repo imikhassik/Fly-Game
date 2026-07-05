@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://cdigo6v4hqtgp"]
 
 [ext_resource type="PackedScene" uid="uid://4i81gl7adgsh" path="res://scenes/player.tscn" id="1_2venv"]
+[ext_resource type="PackedScene" uid="uid://7h5mmjjgn5c8" path="res://scenes/platform.tscn" id="2_paw1w"]
+[ext_resource type="Script" uid="uid://de30uwe0kujr0" path="res://scripts/platform_manager.gd" id="3_j6w7d"]
 
 [node name="Node2D" type="Control" unique_id=804871185]
 layout_mode = 3
@@ -18,5 +20,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="Platform" parent="." unique_id=1887111216 instance=ExtResource("2_paw1w")]
+position = Vector2(360, 900)
+force_variant = 1
+
 [node name="CharacterBody2D" parent="." unique_id=1584304132 instance=ExtResource("1_2venv")]
-position = Vector2(360, 1040)
+position = Vector2(360, 900)
+
+[node name="PlatformManager" type="Node" parent="." unique_id=1790871871]
+script = ExtResource("3_j6w7d")
+starting_platform_path = NodePath("../Platform")

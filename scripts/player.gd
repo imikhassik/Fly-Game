@@ -1,5 +1,8 @@
 extends CharacterBody2D
 
+signal landed
+signal took_off
+
 # ----- STATES -----
 enum FlyState { FLYING, LANDING, LANDED, TAKING_OFF }
 var state: FlyState = FlyState.LANDED
@@ -11,7 +14,7 @@ var state: FlyState = FlyState.LANDED
 @export var walk_speed: float = 150.0
 
 # ----- FLYING -----
-@export var forward_speed: float = 35.0        # constant drift
+@export var forward_speed: float = 60.0        # constant drift
 @export var up_boost: float = 160.0            # extra speed when W pressed
 
 # ----- LANDING / TAKEOFF -----
@@ -29,12 +32,17 @@ func _ready() -> void:
 	original_scale = $Sprite2D.scale
 	$Sprite2D.scale = original_scale * landing_scale_target
 	$Sprite2D.rotation = 0.0
+	add_to_group("player") 
 
 func _physics_process(delta: float) -> void:
-	var input_vector: Vector2 = Input.get_vector(
-		"move_left", "move_right",
-		"move_up", "move_down"
-	)
+	var input_vector := Vector2.ZERO
+	if Input.is_action_pressed("move_left"):
+		input_vector.x -= 1.0
+	if Input.is_action_pressed("move_right"):
+		input_vector.x += 1.0
+	if Input.is_action_pressed("move_up"):
+		input_vector.y -= 1.0
+	# 'move_down' is intentionally omitted (does nothing)
 	
 	if Input.is_action_just_pressed("land"):
 		match state:
@@ -117,7 +125,7 @@ func landing_update(delta: float) -> void:
 			print("Landed!")
 
 # ----- TAKING OFF STATE -----
-func take_off_update(delta: float) -> void:
+func take_off_update(_delta: float) -> void:
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * takeoff_forward_speed
 	move_and_slide()
@@ -131,10 +139,12 @@ func take_off_update(delta: float) -> void:
 func start_landing() -> void:
 	state = FlyState.LANDING
 	vertical_velocity = velocity.length()
+	landed.emit()
 	print("Landing started...")
 
 func start_take_off() -> void:
 	state = FlyState.TAKING_OFF
+	took_off.emit()
 	print("Taking off...")
 
 # ----- SCALE TRANSITIONS -----
