@@ -9,11 +9,11 @@
 
 [node name="Platform" type="StaticBody2D" unique_id=1887111216]
 script = ExtResource("1_6f2a1")
-force_variant = null
 
 [node name="Variant1" type="Area2D" parent="." unique_id=1166040717]
 process_mode = 4
 visible = false
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant1" unique_id=665022055]
 scale = Vector2(0.28618324, 0.28618324)
@@ -21,49 +21,53 @@ texture = ExtResource("1_u7qrw")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Variant1" unique_id=1270553649]
 scale = Vector2(1.7581778, 1.7581774)
-polygon = PackedVector2Array(-77.921585, -48.34552, 71.09634, -55.73954, 76.78404, 56.30831, 0.4246025, 51.973755, -71.80928, 57.661465)
+polygon = PackedVector2Array(-72.23388, -46.07044, 68.25249, -50.6206, 67.114944, 0, 71.66511, 51.189373, -6.256478, 47.207977, -65.9774, 51.758144)
 
 [node name="Variant2" type="Area2D" parent="." unique_id=1019225492]
 process_mode = 4
 visible = false
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant2" unique_id=417155102]
 scale = Vector2(0.29617834, 0.29617834)
 texture = ExtResource("2_6f2a1")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Variant2" unique_id=1767850555]
-polygon = PackedVector2Array(-142, -216, 158, -218, 144, 222, -26, 202, -134, 213)
+polygon = PackedVector2Array(-149, -215, 147, -213, 134, 23, 138, 216, -24, 201, -121, 208)
 
 [node name="Variant3" type="Area2D" parent="." unique_id=1486432190]
 process_mode = 4
 visible = false
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant3" unique_id=558444520]
 scale = Vector2(0.3022876, 0.3022876)
 texture = ExtResource("3_r8v6l")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Variant3" unique_id=584748534]
-polygon = PackedVector2Array(-54, -194, 153, -105, 60, 161, -71, 166, -151, 188, -152, -102)
+polygon = PackedVector2Array(-54, -184, 49, -148, 142, -98, 56, 156, -69, 160, -141, 182, -149, -103)
 
 [node name="Variant4" type="Area2D" parent="." unique_id=412147068]
 process_mode = 4
 visible = false
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant4" unique_id=354655070]
 scale = Vector2(0.30205417, 0.30205417)
 texture = ExtResource("4_pvkk7")
+flip_h = true
+flip_v = true
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Variant4" unique_id=785938098]
-polygon = PackedVector2Array(-100, -103, -13, -136, 81, -153, 158, -126, 200, -62, 188, -3, 149, 62, 53, 130, -43, 153, -116, 145, -184, 98, -197, 32, -163, -39)
+polygon = PackedVector2Array(-92.83807, -98.13814, 0, -141, 88, -142, 154, -115, 188, -66, 186, 1, 133, 64, 58, 117, -33.053596, 141.59259, -100.34366, 144.7624, -174, 94, -187.98372, 27.624775, -158.46428, -37.564213)
 
 [node name="Variant5" type="Area2D" parent="." unique_id=1196123664]
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant5" unique_id=782280991]
-rotation = 0.06291634
 scale = Vector2(0.29512864, 0.2951286)
 texture = ExtResource("5_1oqhx")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Variant5" unique_id=2109624519]
-rotation = 0.06291634
 scale = Vector2(0.29512864, 0.2951286)
-polygon = PackedVector2Array(-84, -158, 216, -171, 136, 166, -10, 160, -153, 177, -213, 32, -154, -110, -43, -40)
+polygon = PackedVector2Array(-255.49577, -521.26953, 693.9326, -570.8367, 560.5874, -116.18748, 438.39297, 529.81134, 52.906116, 504.27536, -500.3395, 573.47516, -583.2016, 304.7047, -706.6264, 114.1378, -520.39026, -322.47363, -95.913345, -72.65049)

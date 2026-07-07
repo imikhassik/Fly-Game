@@ -7,7 +7,13 @@
 radius = 14.0
 height = 64.0
 
-[node name="CharacterBody2D" type="CharacterBody2D" unique_id=1584304132]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_j6w7d"]
+size = Vector2(21, 53)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ejr3x"]
+radius = 5.0
+
+[node name="Fly" type="CharacterBody2D" unique_id=1584304132]
 script = ExtResource("1_g2els")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1273881272]
@@ -16,3 +22,19 @@ texture = ExtResource("1_3vyb7")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1849372521]
 shape = SubResource("CapsuleShape2D_ejr3x")
+
+[node name="LandingDetector" type="Area2D" parent="." unique_id=1387160081]
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LandingDetector" unique_id=683603897]
+shape = SubResource("RectangleShape2D_j6w7d")
+debug_color = Color(0.25655583, 0.6262352, 0.30768093, 0.41960785)
+
+[node name="HeadDetector" type="Area2D" parent="." unique_id=493346281]
+collision_layer = 2
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HeadDetector" unique_id=1731464016]
+position = Vector2(0, -35)
+shape = SubResource("CircleShape2D_ejr3x")
+debug_color = Color(0.7477854, 0.2613674, 0.93557024, 0.41960785)

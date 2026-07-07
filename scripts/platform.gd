@@ -1,7 +1,7 @@
 @tool
 extends StaticBody2D
 
-@export var force_variant: int = 0  # 0 = random, 1-5 = specific variant
+@export var force_variant: int = 0
 
 func _ready() -> void:
 	# Gather all variant nodes
@@ -26,23 +26,26 @@ func _ready() -> void:
 		variant.visible = (variant == chosen)
 		variant.process_mode = PROCESS_MODE_DISABLED if variant != chosen else PROCESS_MODE_INHERIT
 	
-	# Get the sprite and collision from the chosen variant
+	# Get references (children are not reset – keep their editor transforms)
 	var sprite = chosen.get_node("Sprite2D")
 	var collision = chosen.get_node("CollisionPolygon2D")
 	
-	# Use the existing scale set in the editor as the BASE scale
+	# Preserve the sprite's editor scale (so your manual sizing remains)
 	var base_scale = sprite.scale
 	
-	var scale_factor = randf_range(0.8, 1.2)
-	var final_scale = base_scale * scale_factor
-	sprite.scale = final_scale
-	collision.scale = final_scale
+	# ----- APPLY RANDOM TRANSFORMS TO THE PARENT (Area2D) -----
+	# Flip (horizontal/vertical) using parent scale
+	var flip_h = randi() % 2 == 0
+	var flip_v = randi() % 2 == 0
+	chosen.scale.x = -1 if flip_h else 1
+	chosen.scale.y = -1 if flip_v else 1
 	
-	# Apply random flip (optional)
-	sprite.flip_h = randi() % 2 == 0
-	sprite.flip_v = randi() % 2 == 0
-	
-	# Apply random rotation (e.g., ±15 degrees)
+	# Random rotation (±15 degrees)
 	var rotation_deg = randf_range(-15.0, 15.0)
-	sprite.rotation = deg_to_rad(rotation_deg)
-	collision.rotation = deg_to_rad(rotation_deg)
+	chosen.rotation = deg_to_rad(rotation_deg)
+	
+	# Restore the sprite's scale (preserve your editor sizing)
+	sprite.scale = base_scale
+	
+	# --- DO NOT reset position, rotation, or flip of children ---
+	# They keep their editor-defined local transforms.
