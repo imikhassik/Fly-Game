@@ -5,12 +5,20 @@ extends Node
 @export var platform_speed: float = 40.0
 @export var starting_platform_path: NodePath
 
+# ----- PLATFORM SCALING -----
+@export var landed_scale: float = 1.0      # 100% (editor scale)
+@export var flying_scale: float = 0.5      # 50% (editor scale)
+@export var scale_speed: float = 0.5       # how fast scale changes (per second)
+
 var spawn_interval: float = 20.0
 var spawn_timer: float = 0.0
 var is_moving: bool = false
 var active_platforms: Array[Node] = []
 var starting_platform: Node2D = null
 var starting_platform_added: bool = false
+
+# Target scale for all platforms (set by fly state)
+var target_platform_scale: float = 1.0
 
 func _ready() -> void:
 	print("PlatformManager _ready() called.")
@@ -34,10 +42,22 @@ func _ready() -> void:
 	else:
 		push_warning("starting_platform_path not set in PlatformManager!")
 	
-	# Initial spawn interval (first platform appears in this range)
 	spawn_interval = randf_range(15.0, 25.0)
+	
+	# Starting platform starts at landed scale (100%)
+	target_platform_scale = landed_scale
+	if starting_platform:
+		starting_platform.scale = Vector2(landed_scale, landed_scale)
 
 func _process(delta: float) -> void:
+	# Smoothly scale all active platforms toward the target scale
+	var current_scale = Vector2(target_platform_scale, target_platform_scale)
+	
+	for platform in active_platforms:
+		if is_instance_valid(platform):
+			platform.scale = platform.scale.move_toward(current_scale, scale_speed * delta)
+
+func _physics_process(delta: float) -> void:
 	if not is_moving:
 		return
 	
@@ -46,8 +66,7 @@ func _process(delta: float) -> void:
 	if spawn_timer >= spawn_interval:
 		spawn_timer = 0.0
 		spawn_platform()
-		# Subsequent platforms spawn every 35–50 seconds
-		spawn_interval = randf_range(35.0, 50.0)
+		spawn_interval = randf_range(15.0, 20.0)
 	
 	# Movement
 	for platform in active_platforms:
@@ -73,19 +92,24 @@ func spawn_platform() -> void:
 	
 	new_platform.position = Vector2(random_x, -250)
 	
+	# New platforms spawn at the current target scale
+	new_platform.scale = Vector2(target_platform_scale, target_platform_scale)
+	
 	get_tree().current_scene.add_child(new_platform)
 	active_platforms.append(new_platform)
 	
 	print("Platform spawned at: ", new_platform.position)
 
 func _on_fly_landed() -> void:
-	print("_on_fly_landed() called - pausing movement")
+	print("_on_fly_landed() called - pausing movement, scaling to 100%")
 	is_moving = false
+	target_platform_scale = landed_scale
 
 func _on_fly_took_off() -> void:
-	print("_on_fly_took_off() called - resuming movement")
+	print("_on_fly_took_off() called - resuming movement, scaling to 50%")
 	is_moving = true
 	spawn_timer = 0.0
+	target_platform_scale = flying_scale
 	
 	if starting_platform and not starting_platform_added:
 		active_platforms.append(starting_platform)

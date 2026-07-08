@@ -26,6 +26,8 @@ polygon = PackedVector2Array(-72.23388, -46.07044, 68.25249, -50.6206, 67.114944
 [node name="Variant2" type="Area2D" parent="." unique_id=1019225492]
 process_mode = 4
 visible = false
+rotation = -0.24128962
+scale = Vector2(-1, 1)
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant2" unique_id=417155102]
@@ -48,8 +50,8 @@ texture = ExtResource("3_r8v6l")
 polygon = PackedVector2Array(-54, -184, 49, -148, 142, -98, 56, 156, -69, 160, -141, 182, -149, -103)
 
 [node name="Variant4" type="Area2D" parent="." unique_id=412147068]
-process_mode = 4
-visible = false
+rotation = -0.11967472
+scale = Vector2(1, -1)
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant4" unique_id=354655070]
@@ -62,6 +64,8 @@ flip_v = true
 polygon = PackedVector2Array(-92.83807, -98.13814, 0, -141, 88, -142, 154, -115, 188, -66, 186, 1, 133, 64, 58, 117, -33.053596, 141.59259, -100.34366, 144.7624, -174, 94, -187.98372, 27.624775, -158.46428, -37.564213)
 
 [node name="Variant5" type="Area2D" parent="." unique_id=1196123664]
+process_mode = 4
+visible = false
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant5" unique_id=782280991]
