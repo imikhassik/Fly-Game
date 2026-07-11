@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://c8tjlfqo5qf8r"]
+
+[ext_resource type="Script" uid="uid://bgub2x4j6o1t2" path="res://scripts/enemy.gd" id="1_md0e3"]
+[ext_resource type="Texture2D" uid="uid://c6mjxkkp1objk" path="res://assets/enemies/enemy1.PNG" id="2_4ra3w"]
+[ext_resource type="AudioStream" uid="uid://d3qqoammoe4i1" path="res://assets/audio/enemy-projectile-spit-sound.ogg" id="3_4ra3w"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ejr3x"]
+radius = 15.0
+height = 92.0
+
+[node name="Enemy" type="CharacterBody2D" unique_id=1781684621 node_paths=PackedStringArray("shoot_sound")]
+collision_layer = 2
+script = ExtResource("1_md0e3")
+shoot_sound = NodePath("ShootSound")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1084816652]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("2_4ra3w")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=244359878]
+shape = SubResource("CapsuleShape2D_ejr3x")
+
+[node name="ShootSound" type="AudioStreamPlayer2D" parent="." unique_id=844862797]
+stream = ExtResource("3_4ra3w")

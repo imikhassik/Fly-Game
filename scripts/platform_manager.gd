@@ -66,7 +66,7 @@ func _physics_process(delta: float) -> void:
 	if spawn_timer >= spawn_interval:
 		spawn_timer = 0.0
 		spawn_platform()
-		spawn_interval = randf_range(15.0, 20.0)
+		spawn_interval = randf_range(35.0, 50.0)
 	
 	# Movement
 	for platform in active_platforms:

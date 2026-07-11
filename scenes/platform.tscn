@@ -8,11 +8,12 @@
 [ext_resource type="Texture2D" uid="uid://c4f7dmu7or2tp" path="res://assets/platforms/platform5.PNG" id="5_1oqhx"]
 
 [node name="Platform" type="StaticBody2D" unique_id=1887111216]
+collision_layer = 2
 script = ExtResource("1_6f2a1")
 
 [node name="Variant1" type="Area2D" parent="." unique_id=1166040717]
-process_mode = 4
-visible = false
+rotation = 0.12126935
+scale = Vector2(-1, -1)
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Variant1" unique_id=665022055]
@@ -50,6 +51,8 @@ texture = ExtResource("3_r8v6l")
 polygon = PackedVector2Array(-54, -184, 49, -148, 142, -98, 56, 156, -69, 160, -141, 182, -149, -103)
 
 [node name="Variant4" type="Area2D" parent="." unique_id=412147068]
+process_mode = 4
+visible = false
 rotation = -0.11967472
 scale = Vector2(1, -1)
 collision_layer = 2

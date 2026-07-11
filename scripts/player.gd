@@ -15,6 +15,14 @@ var state: FlyState = FlyState.LANDED
 @export var landing_scale_speed: float = 0.03
 @export var take_off_scale_speed: float = 0.03
 @export var takeoff_forward_speed: float = 150.0
+@export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
+@export var shoot_sound: AudioStreamPlayer2D
+@export var max_health: int = 3
+@export var invincibility_duration: float = 1.0
+@export var respawn_position: Vector2 = Vector2(360, 900)
+
+var health: int
+var invincible: bool = false
 
 var original_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
@@ -25,6 +33,8 @@ func _ready() -> void:
 	$Sprite2D.rotation = 0.0
 	z_index = 1
 	add_to_group("player")
+	
+	health = max_health
 	
 	# ----- COLLISION LAYERS -----
 	collision_layer = 1
@@ -44,6 +54,10 @@ func _physics_process(delta: float) -> void:
 		input_vector.x += 1.0
 	if Input.is_action_pressed("move_up"):
 		input_vector.y -= 1.0
+		
+	# ----- SHOOTING -----
+	if Input.is_action_just_pressed("shoot") and state == FlyState.FLYING:
+		shoot()
 
 	if Input.is_action_just_pressed("land"):
 		match state:
@@ -66,7 +80,7 @@ func _physics_process(delta: float) -> void:
 			landed_update(input_vector, delta)
 		FlyState.TAKING_OFF:
 			take_off_update(delta)
-
+			
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float) -> void:
 	if abs(input_vector.x) > 0.01:
@@ -203,6 +217,52 @@ func _is_head_on_platform() -> bool:
 		if area.collision_layer & 2:
 			return true
 	return false
+	
+func shoot() -> void:
+	if projectile_scene == null:
+		print("No projectile scene assigned!")
+		return
+	
+	var projectile = projectile_scene.instantiate()
+	
+	# Position slightly in front of the fly (in the direction it's facing)
+	var offset: Vector2 = Vector2(0, -25).rotated(rotation)
+	projectile.global_position = global_position + offset
+	projectile.direction = Vector2(0, -1).rotated(rotation)
+	
+	get_tree().current_scene.add_child(projectile)
+	
+	# Play the shooting sound
+	if shoot_sound:
+		shoot_sound.play()
+
+func take_damage() -> void:
+	if invincible:
+		return
+	health -= 1
+	print("Fly took damage! Health: ", health)
+	if health <= 0:
+		respawn()
+	else:
+		_start_invincibility()
+		
+func _start_invincibility() -> void:
+	invincible = true
+	$Sprite2D.modulate = Color(1, 0.5, 0.5)  # red tint
+	await get_tree().create_timer(invincibility_duration).timeout
+	$Sprite2D.modulate = Color.WHITE
+	invincible = false
+		
+func respawn() -> void:
+	global_position = respawn_position
+	health = max_health
+	velocity = Vector2.ZERO
+	state = FlyState.FLYING
+	$Sprite2D.scale = original_scale
+	$Sprite2D.rotation = 0.0
+	invincible = false
+	$Sprite2D.modulate = Color.WHITE
+	print("Fly respawned (FLYING).")
 
 # ----- SCALE TRANSITIONS -----
 func _process(delta: float) -> void:
