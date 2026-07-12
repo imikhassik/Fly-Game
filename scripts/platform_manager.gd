@@ -37,11 +37,15 @@ func _ready() -> void:
 		starting_platform = get_node(starting_platform_path)
 		if starting_platform:
 			print("Starting platform found: ", starting_platform.name)
+			# ----- REPOSITION STARTING PLATFORM DYNAMICALLY -----
+			var screen_size = get_viewport().get_visible_rect().size
+			var bottom_offset = 150
+			starting_platform.global_position = Vector2(screen_size.x / 2, screen_size.y - bottom_offset)
 		else:
 			push_warning("Starting platform not found at path: ", starting_platform_path)
 	else:
 		push_warning("starting_platform_path not set in PlatformManager!")
-	
+		
 	spawn_interval = randf_range(15.0, 25.0)
 	
 	# Starting platform starts at landed scale (100%)

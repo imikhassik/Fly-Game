@@ -19,13 +19,14 @@ var state: FlyState = FlyState.LANDED
 @export var shoot_sound: AudioStreamPlayer2D
 @export var max_health: int = 3
 @export var invincibility_duration: float = 1.0
-@export var respawn_position: Vector2 = Vector2(360, 900)
 
 var health: int
 var invincible: bool = false
 
 var original_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
+
+var respawn_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	original_scale = $Sprite2D.scale
@@ -35,6 +36,12 @@ func _ready() -> void:
 	add_to_group("player")
 	
 	health = max_health
+	
+	# ----- SET DYNAMIC START POSITION (bottom center) -----
+	var screen_size = get_viewport().get_visible_rect().size
+	var bottom_offset = 150  # pixels above the bottom edge
+	respawn_position = Vector2(screen_size.x / 2, screen_size.y - bottom_offset)
+	global_position = respawn_position   # place the fly there immediately
 	
 	# ----- COLLISION LAYERS -----
 	collision_layer = 1
