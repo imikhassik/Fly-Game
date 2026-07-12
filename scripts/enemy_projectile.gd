@@ -9,6 +9,8 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
 	
+	z_index = 2
+	
 	var timer = get_tree().create_timer(lifetime)
 	timer.timeout.connect(queue_free)
 
