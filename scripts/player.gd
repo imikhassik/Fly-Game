@@ -38,7 +38,7 @@ func _ready() -> void:
 	
 	# ----- COLLISION LAYERS -----
 	collision_layer = 1
-	collision_mask = 1
+	collision_mask = 3
 	
 	$LandingDetector.collision_layer = 1
 	$LandingDetector.collision_mask = 2
