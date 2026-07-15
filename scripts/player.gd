@@ -20,12 +20,19 @@ var state: FlyState = FlyState.LANDED
 @export var max_health: int = 3
 @export var invincibility_duration: float = 1.0
 
+# ----- BOUNDARY PUSH (velocity‑based) -----
+@export var boundary_margin: float = 100.0
+@export var boundary_push_strength: float = 400.0  # max push velocity (px/s)
+
 var health: int
 var invincible: bool = false
 
 var original_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
 var respawn_position: Vector2 = Vector2.ZERO
+
+# Store push velocity for current frame
+var boundary_push: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	original_scale = $Sprite2D.scale
@@ -51,7 +58,7 @@ func _ready() -> void:
 	$HeadDetector.collision_mask = 2
 
 func _physics_process(delta: float) -> void:
-	# ----- KEYBOARD INPUT (unchanged) -----
+	# ----- KEYBOARD INPUT -----
 	var input_vector := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
 		input_vector.x -= 1.0
@@ -60,7 +67,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("move_up"):
 		input_vector.y -= 1.0
 	
-	# ----- CONTROLLER INPUT (separate actions) -----
+	# ----- CONTROLLER INPUT -----
 	var controller_vector := Vector2.ZERO
 	var raw_stick := Vector2.ZERO
 	var deadzone := 0.2
@@ -74,9 +81,30 @@ func _physics_process(delta: float) -> void:
 		controller_vector = stick_vec.normalized()
 		using_controller = true
 	
-	# Controller overrides keyboard if active
 	if using_controller:
 		input_vector = controller_vector
+	
+	# ----- BOUNDARY PUSH (velocity‑based) -----
+	var screen_size = get_viewport().get_visible_rect().size
+	var push := Vector2.ZERO
+	var margin = boundary_margin
+	var max_push = boundary_push_strength
+	
+	if global_position.x < margin:
+		var factor = 1.0 - (global_position.x / margin)
+		push.x = max_push * factor
+	elif global_position.x > screen_size.x - margin:
+		var factor = (global_position.x - (screen_size.x - margin)) / margin
+		push.x = -max_push * factor
+	
+	if global_position.y < margin:
+		var factor = 1.0 - (global_position.y / margin)
+		push.y = max_push * factor
+	elif global_position.y > screen_size.y - margin:
+		var factor = (global_position.y - (screen_size.y - margin)) / margin
+		push.y = -max_push * factor
+	
+	boundary_push = push
 		
 	# ----- SHOOTING -----
 	if Input.is_action_just_pressed("shoot") and state == FlyState.FLYING:
@@ -104,19 +132,19 @@ func _physics_process(delta: float) -> void:
 		FlyState.TAKING_OFF:
 			take_off_update(delta)
 
-# ----- FLYING STATE (with proportional controller speed) -----
+# ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
 		var angle_diff = angle_difference(rotation, target_rotation)
 		rotation += clamp(angle_diff, -rotation_speed * delta, rotation_speed * delta)
 		
-		# Proportional speed: stick magnitude determines boost amount
 		var stick_magnitude = clamp(raw_stick.length(), 0.0, 1.0)
 		var speed = forward_speed + up_boost * stick_magnitude
 		
 		var forward_dir = Vector2(0, -1).rotated(rotation)
 		velocity = forward_dir * speed
+		velocity += boundary_push   # velocity‑based push (no delta)
 		move_and_slide()
 		var screen_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, screen_size.x)
@@ -134,6 +162,7 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * speed
+	velocity += boundary_push   # velocity‑based push (no delta)
 	move_and_slide()
 
 	var screen_size: Vector2 = get_viewport().get_visible_rect().size
@@ -153,6 +182,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			velocity = forward_dir * walk_speed
 		else:
 			velocity = Vector2.ZERO
+		velocity += boundary_push
 		move_and_slide()
 		var screen_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, screen_size.x)
@@ -173,6 +203,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 	else:
 		velocity = Vector2.ZERO
 
+	velocity += boundary_push
 	move_and_slide()
 
 	var screen_size: Vector2 = get_viewport().get_visible_rect().size
@@ -186,6 +217,7 @@ func landing_update(delta: float) -> void:
 	vertical_velocity = move_toward(vertical_velocity, 0.0, landing_deceleration * delta)
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * vertical_velocity
+	velocity += boundary_push
 	move_and_slide()
 
 	if abs(vertical_velocity) < 1.0:
@@ -198,6 +230,7 @@ func landing_update(delta: float) -> void:
 func take_off_update(_delta: float) -> void:
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * takeoff_forward_speed
+	velocity += boundary_push
 	move_and_slide()
 
 	if $Sprite2D.scale.distance_to(original_scale) < 0.01:
@@ -210,11 +243,13 @@ func start_landing() -> void:
 	state = FlyState.LANDING
 	vertical_velocity = velocity.length()
 	landed.emit()
+	_vibrate(0.6, 0.2)
 	print("Landing started...")
 
 func start_take_off() -> void:
 	state = FlyState.TAKING_OFF
 	took_off.emit()
+	_vibrate(0.6, 0.3)
 	print("Taking off...")
 
 # ----- HELPER FUNCTIONS (unchanged) -----
@@ -275,10 +310,17 @@ func _is_head_on_platform() -> bool:
 			return true
 	return false
 
+func _vibrate(duration: float = 0.3, intensity: float = 0.7) -> void:
+	var joypads = Input.get_connected_joypads()
+	for device in joypads:
+		Input.start_joy_vibration(device, intensity, intensity, duration)
+
 func shoot() -> void:
 	if projectile_scene == null:
 		print("No projectile scene assigned!")
 		return
+	
+	_vibrate(0.3, 0.1)
 	
 	var projectile = projectile_scene.instantiate()
 	var offset: Vector2 = Vector2(0, -25).rotated(rotation)
@@ -293,6 +335,7 @@ func shoot() -> void:
 func take_damage() -> void:
 	if invincible:
 		return
+	_vibrate(0.5, 0.3)
 	health -= 1
 	print("Fly took damage! Health: ", health)
 	if health <= 0:
