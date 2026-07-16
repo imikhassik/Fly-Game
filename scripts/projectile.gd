@@ -7,7 +7,7 @@ var direction: Vector2 = Vector2.UP
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
-	area_entered.connect(_on_area_entered)   # <-- NEW
+	area_entered.connect(_on_area_entered)
 	
 	var timer = get_tree().create_timer(lifetime)
 	timer.timeout.connect(queue_free)

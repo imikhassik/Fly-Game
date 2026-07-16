@@ -20,9 +20,12 @@ var state: FlyState = FlyState.LANDED
 @export var max_health: int = 3
 @export var invincibility_duration: float = 1.0
 
+# ----- SHOOT COOLDOWN -----
+@export var shoot_cooldown: float = 1.5
+
 # ----- BOUNDARY PUSH (velocity‑based) -----
 @export var boundary_margin: float = 100.0
-@export var boundary_push_strength: float = 400.0  # max push velocity (px/s)
+@export var boundary_push_strength: float = 400.0
 
 var health: int
 var invincible: bool = false
@@ -30,8 +33,8 @@ var invincible: bool = false
 var original_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
 var respawn_position: Vector2 = Vector2.ZERO
+var shoot_timer: float = 0.0
 
-# Store push velocity for current frame
 var boundary_push: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
@@ -106,9 +109,13 @@ func _physics_process(delta: float) -> void:
 	
 	boundary_push = push
 		
-	# ----- SHOOTING -----
-	if Input.is_action_just_pressed("shoot") and state == FlyState.FLYING:
+	# ----- SHOOTING (cooldown) -----
+	if shoot_timer > 0:
+		shoot_timer -= delta
+
+	if Input.is_action_just_pressed("shoot") and state == FlyState.FLYING and shoot_timer <= 0:
 		shoot()
+		shoot_timer = shoot_cooldown
 
 	if Input.is_action_just_pressed("land"):
 		match state:
@@ -134,21 +141,25 @@ func _physics_process(delta: float) -> void:
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
+	var fly_speed: float
+	var move_dir: Vector2
+	var viewport_size: Vector2
+	
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
 		var angle_diff = angle_difference(rotation, target_rotation)
 		rotation += clamp(angle_diff, -rotation_speed * delta, rotation_speed * delta)
 		
 		var stick_magnitude = clamp(raw_stick.length(), 0.0, 1.0)
-		var speed = forward_speed + up_boost * stick_magnitude
+		fly_speed = forward_speed + up_boost * stick_magnitude
 		
-		var forward_dir = Vector2(0, -1).rotated(rotation)
-		velocity = forward_dir * speed
-		velocity += boundary_push   # velocity‑based push (no delta)
+		move_dir = Vector2(0, -1).rotated(rotation)
+		velocity = move_dir * fly_speed
+		velocity += boundary_push
 		move_and_slide()
-		var screen_size = get_viewport().get_visible_rect().size
-		position.x = clamp(position.x, 0.0, screen_size.x)
-		position.y = clamp(position.y, 0.0, screen_size.y)
+		viewport_size = get_viewport().get_visible_rect().size
+		position.x = clamp(position.x, 0.0, viewport_size.x)
+		position.y = clamp(position.y, 0.0, viewport_size.y)
 		$Sprite2D.rotation = 0.0
 		return
 
@@ -156,37 +167,40 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 	if abs(input_vector.x) > 0.01:
 		rotation += input_vector.x * rotation_speed * delta
 
-	var speed = forward_speed
+	fly_speed = forward_speed
 	if input_vector.y < 0:
-		speed += up_boost
+		fly_speed += up_boost
 
-	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
-	velocity = forward_dir * speed
-	velocity += boundary_push   # velocity‑based push (no delta)
+	move_dir = Vector2(0, -1).rotated(rotation)
+	velocity = move_dir * fly_speed
+	velocity += boundary_push
 	move_and_slide()
 
-	var screen_size: Vector2 = get_viewport().get_visible_rect().size
-	position.x = clamp(position.x, 0.0, screen_size.x)
-	position.y = clamp(position.y, 0.0, screen_size.y)
+	viewport_size = get_viewport().get_visible_rect().size
+	position.x = clamp(position.x, 0.0, viewport_size.x)
+	position.y = clamp(position.y, 0.0, viewport_size.y)
 
 	$Sprite2D.rotation = 0.0
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
+	var move_dir: Vector2
+	var viewport_size: Vector2
+	
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
 		var angle_diff = angle_difference(rotation, target_rotation)
 		rotation += clamp(angle_diff, -rotation_speed * delta, rotation_speed * delta)
 		if _is_head_on_platform():
-			var forward_dir = Vector2(0, -1).rotated(rotation)
-			velocity = forward_dir * walk_speed
+			move_dir = Vector2(0, -1).rotated(rotation)
+			velocity = move_dir * walk_speed
 		else:
 			velocity = Vector2.ZERO
 		velocity += boundary_push
 		move_and_slide()
-		var screen_size = get_viewport().get_visible_rect().size
-		position.x = clamp(position.x, 0.0, screen_size.x)
-		position.y = clamp(position.y, 0.0, screen_size.y)
+		viewport_size = get_viewport().get_visible_rect().size
+		position.x = clamp(position.x, 0.0, viewport_size.x)
+		position.y = clamp(position.y, 0.0, viewport_size.y)
 		$Sprite2D.rotation = 0.0
 		return
 
@@ -196,8 +210,8 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 
 	if input_vector.y < 0:
 		if _is_head_on_platform():
-			var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
-			velocity = forward_dir * walk_speed
+			move_dir = Vector2(0, -1).rotated(rotation)
+			velocity = move_dir * walk_speed
 		else:
 			velocity = Vector2.ZERO
 	else:
@@ -206,13 +220,13 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 	velocity += boundary_push
 	move_and_slide()
 
-	var screen_size: Vector2 = get_viewport().get_visible_rect().size
-	position.x = clamp(position.x, 0.0, screen_size.x)
-	position.y = clamp(position.y, 0.0, screen_size.y)
+	viewport_size = get_viewport().get_visible_rect().size
+	position.x = clamp(position.x, 0.0, viewport_size.x)
+	position.y = clamp(position.y, 0.0, viewport_size.y)
 
 	$Sprite2D.rotation = 0.0
 
-# ----- LANDING STATE (unchanged) -----
+# ----- LANDING STATE -----
 func landing_update(delta: float) -> void:
 	vertical_velocity = move_toward(vertical_velocity, 0.0, landing_deceleration * delta)
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
@@ -226,7 +240,7 @@ func landing_update(delta: float) -> void:
 			velocity = Vector2.ZERO
 			print("Landed!")
 
-# ----- TAKING OFF STATE (unchanged) -----
+# ----- TAKING OFF STATE -----
 func take_off_update(_delta: float) -> void:
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * takeoff_forward_speed
@@ -238,7 +252,7 @@ func take_off_update(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		print("Take off complete!")
 
-# ----- TRANSITION TRIGGERS (unchanged) -----
+# ----- TRANSITION TRIGGERS -----
 func start_landing() -> void:
 	state = FlyState.LANDING
 	vertical_velocity = velocity.length()
@@ -252,7 +266,7 @@ func start_take_off() -> void:
 	_vibrate(0.6, 0.3)
 	print("Taking off...")
 
-# ----- HELPER FUNCTIONS (unchanged) -----
+# ----- HELPER FUNCTIONS -----
 func _get_platform_polygon_global(area: Area2D) -> PackedVector2Array:
 	var platform_collision = area.get_node("CollisionPolygon2D")
 	if not platform_collision:

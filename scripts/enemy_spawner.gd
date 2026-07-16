@@ -5,7 +5,7 @@ extends Node2D
 @export var spawn_interval_min: float = 10.0
 @export var spawn_interval_max: float = 20.0
 @export var spawn_margin: float = 100.0
-@export var max_enemies: int = 3
+@export var max_enemies: int = 5
 @export var initial_spawn_delay_min: float = 1.0
 @export var initial_spawn_delay_max: float = 3.0
 
