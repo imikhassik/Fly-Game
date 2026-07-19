@@ -6,4 +6,8 @@
 [resource]
 script = ExtResource("1_roont")
 texture = ExtResource("2_rqep2")
+speed = 60.0
+health = 2
+shoot_interval_min = 1.0
+shoot_interval_max = 2.5
 metadata/_custom_type_script = "uid://y7r0wy80qvtc"

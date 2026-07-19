@@ -4,29 +4,10 @@
 [ext_resource type="Texture2D" uid="uid://c6mjxkkp1objk" path="res://assets/enemies/enemy1.PNG" id="2_4ra3w"]
 [ext_resource type="Script" uid="uid://y7r0wy80qvtc" path="res://scripts/enemy_type.gd" id="2_5uy6h"]
 [ext_resource type="AudioStream" uid="uid://d3qqoammoe4i1" path="res://assets/audio/enemy-projectile-spit-sound.ogg" id="3_4ra3w"]
-[ext_resource type="Texture2D" uid="uid://cjfnol4jsen6d" path="res://assets/enemies/enemy2.PNG" id="4_nenq2"]
-[ext_resource type="Texture2D" uid="uid://bvop7oykijfye" path="res://assets/enemies/enemy3.PNG" id="5_md484"]
-[ext_resource type="Texture2D" uid="uid://bno6ik55hgrtk" path="res://assets/enemies/enemy4.PNG" id="6_ipns3"]
-
-[sub_resource type="Resource" id="Resource_eeoyu"]
-script = ExtResource("2_5uy6h")
-texture = ExtResource("2_4ra3w")
-metadata/_custom_type_script = "uid://y7r0wy80qvtc"
-
-[sub_resource type="Resource" id="Resource_q0n8o"]
-script = ExtResource("2_5uy6h")
-texture = ExtResource("4_nenq2")
-metadata/_custom_type_script = "uid://y7r0wy80qvtc"
-
-[sub_resource type="Resource" id="Resource_p03mg"]
-script = ExtResource("2_5uy6h")
-texture = ExtResource("5_md484")
-metadata/_custom_type_script = "uid://y7r0wy80qvtc"
-
-[sub_resource type="Resource" id="Resource_heam8"]
-script = ExtResource("2_5uy6h")
-texture = ExtResource("6_ipns3")
-metadata/_custom_type_script = "uid://y7r0wy80qvtc"
+[ext_resource type="Resource" uid="uid://j2h15yg0xhhe" path="res://resources/enemy_types/enemy1.tres" id="3_md484"]
+[ext_resource type="Resource" uid="uid://dx3hs1w54v4kk" path="res://resources/enemy_types/enemy2.tres" id="4_ipns3"]
+[ext_resource type="Resource" uid="uid://dddmrydkqorhn" path="res://resources/enemy_types/enemy3.tres" id="5_md484"]
+[ext_resource type="Resource" uid="uid://ehl1nsuqumaw" path="res://resources/enemy_types/enemy4.tres" id="6_ipns3"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ejr3x"]
 radius = 15.0
@@ -35,7 +16,7 @@ height = 92.0
 [node name="Enemy" type="CharacterBody2D" unique_id=1781684621 node_paths=PackedStringArray("shoot_sound")]
 collision_layer = 2
 script = ExtResource("1_md0e3")
-enemy_types = Array[ExtResource("2_5uy6h")]([SubResource("Resource_eeoyu"), SubResource("Resource_q0n8o"), SubResource("Resource_p03mg"), SubResource("Resource_heam8")])
+enemy_types = Array[ExtResource("2_5uy6h")]([ExtResource("3_md484"), ExtResource("4_ipns3"), ExtResource("5_md484"), ExtResource("6_ipns3")])
 shoot_sound = NodePath("ShootSound")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1084816652]
