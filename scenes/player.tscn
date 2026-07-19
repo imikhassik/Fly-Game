@@ -16,6 +16,7 @@ radius = 5.0
 
 [node name="Fly" type="CharacterBody2D" unique_id=1584304132 node_paths=PackedStringArray("shoot_sound")]
 collision_mask = 3
+platform_floor_layers = 4294967292
 script = ExtResource("1_g2els")
 shoot_sound = NodePath("ShootSound")
 

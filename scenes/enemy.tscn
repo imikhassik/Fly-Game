@@ -15,6 +15,7 @@ height = 92.0
 
 [node name="Enemy" type="CharacterBody2D" unique_id=1781684621 node_paths=PackedStringArray("shoot_sound")]
 collision_layer = 2
+platform_floor_layers = 4294967292
 script = ExtResource("1_md0e3")
 enemy_types = Array[ExtResource("2_5uy6h")]([ExtResource("3_md484"), ExtResource("4_ipns3"), ExtResource("5_md484"), ExtResource("6_ipns3")])
 shoot_sound = NodePath("ShootSound")
