@@ -17,6 +17,7 @@ var state: FlyState = FlyState.LANDED
 @export var takeoff_forward_speed: float = 150.0
 @export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
 @export var shoot_sound: AudioStreamPlayer2D
+@export var flying_sound: AudioStreamPlayer2D
 @export var max_health: int = 3
 @export var invincibility_duration: float = 1.0
 
@@ -43,25 +44,34 @@ func _ready() -> void:
 	$Sprite2D.rotation = 0.0
 	z_index = 1
 	add_to_group("player")
-	
+
 	health = max_health
-	
+
+	collision_layer = 1
+	collision_mask = 3
+
+	$LandingDetector.collision_layer = 1
+	$LandingDetector.collision_mask = 2
+
+	$HeadDetector.collision_layer = 1
+	$HeadDetector.collision_mask = 2
+
+	if flying_sound:
+		flying_sound.stop()
+
+	$Sprite2D.visible = true
+	$AnimatedSprite2D.visible = false
+
+	call_deferred("_set_initial_position")
+
+func _set_initial_position() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
 	var bottom_offset = 150
 	respawn_position = Vector2(screen_size.x / 2, screen_size.y - bottom_offset)
 	global_position = respawn_position
-	
-	collision_layer = 1
-	collision_mask = 3
-	
-	$LandingDetector.collision_layer = 1
-	$LandingDetector.collision_mask = 2
-	
-	$HeadDetector.collision_layer = 1
-	$HeadDetector.collision_mask = 2
+	print("Fly repositioned to: ", global_position)
 
 func _physics_process(delta: float) -> void:
-	# ----- KEYBOARD INPUT -----
 	var input_vector := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
 		input_vector.x -= 1.0
@@ -69,47 +79,44 @@ func _physics_process(delta: float) -> void:
 		input_vector.x += 1.0
 	if Input.is_action_pressed("move_up"):
 		input_vector.y -= 1.0
-	
-	# ----- CONTROLLER INPUT -----
+
 	var controller_vector := Vector2.ZERO
 	var raw_stick := Vector2.ZERO
 	var deadzone := 0.2
 	var stick_x = Input.get_axis("controller_move_left", "controller_move_right")
 	var stick_y = Input.get_axis("controller_move_up", "controller_move_down")
 	var stick_vec = Vector2(stick_x, stick_y)
-	
+
 	var using_controller := false
 	if stick_vec.length() > deadzone:
 		raw_stick = stick_vec
 		controller_vector = stick_vec.normalized()
 		using_controller = true
-	
+
 	if using_controller:
 		input_vector = controller_vector
-	
-	# ----- BOUNDARY PUSH (velocity‑based) -----
+
 	var screen_size = get_viewport().get_visible_rect().size
 	var push := Vector2.ZERO
 	var margin = boundary_margin
 	var max_push = boundary_push_strength
-	
+
 	if global_position.x < margin:
 		var factor = 1.0 - (global_position.x / margin)
 		push.x = max_push * factor
 	elif global_position.x > screen_size.x - margin:
 		var factor = (global_position.x - (screen_size.x - margin)) / margin
 		push.x = -max_push * factor
-	
+
 	if global_position.y < margin:
 		var factor = 1.0 - (global_position.y / margin)
 		push.y = max_push * factor
 	elif global_position.y > screen_size.y - margin:
 		var factor = (global_position.y - (screen_size.y - margin)) / margin
 		push.y = -max_push * factor
-	
+
 	boundary_push = push
-		
-	# ----- SHOOTING (cooldown) -----
+
 	if shoot_timer > 0:
 		shoot_timer -= delta
 
@@ -139,20 +146,34 @@ func _physics_process(delta: float) -> void:
 		FlyState.TAKING_OFF:
 			take_off_update(delta)
 
+	match state:
+		FlyState.FLYING:
+			if not $AnimatedSprite2D.visible:
+				$AnimatedSprite2D.visible = true
+				$Sprite2D.visible = false
+				$AnimatedSprite2D.play("flying")
+		FlyState.LANDED:
+			if not $Sprite2D.visible:
+				$Sprite2D.visible = true
+				$AnimatedSprite2D.visible = false
+				$AnimatedSprite2D.stop()
+		_:
+			pass
+
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
 	var fly_speed: float
 	var move_dir: Vector2
 	var viewport_size: Vector2
-	
+
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
 		var angle_diff = angle_difference(rotation, target_rotation)
 		rotation += clamp(angle_diff, -rotation_speed * delta, rotation_speed * delta)
-		
+
 		var stick_magnitude = clamp(raw_stick.length(), 0.0, 1.0)
 		fly_speed = forward_speed + up_boost * stick_magnitude
-		
+
 		move_dir = Vector2(0, -1).rotated(rotation)
 		velocity = move_dir * fly_speed
 		velocity += boundary_push
@@ -160,10 +181,12 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 		viewport_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
-		$Sprite2D.rotation = 0.0
+		
+		$AnimatedSprite2D.rotation = 0.0
+		if input_vector.x != 0:
+			$AnimatedSprite2D.flip_h = input_vector.x < 0
 		return
 
-	# ----- KEYBOARD (unchanged) -----
 	if abs(input_vector.x) > 0.01:
 		rotation += input_vector.x * rotation_speed * delta
 
@@ -180,13 +203,15 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 	position.x = clamp(position.x, 0.0, viewport_size.x)
 	position.y = clamp(position.y, 0.0, viewport_size.y)
 
-	$Sprite2D.rotation = 0.0
+	$AnimatedSprite2D.rotation = 0.0
+	if input_vector.x != 0:
+		$AnimatedSprite2D.flip_h = input_vector.x < 0
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
 	var move_dir: Vector2
 	var viewport_size: Vector2
-	
+
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
 		var angle_diff = angle_difference(rotation, target_rotation)
@@ -201,10 +226,12 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		viewport_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
+		
 		$Sprite2D.rotation = 0.0
+		if input_vector.x != 0:
+			$Sprite2D.flip_h = input_vector.x < 0
 		return
 
-	# ----- KEYBOARD (unchanged) -----
 	if abs(input_vector.x) > 0.01:
 		rotation += input_vector.x * rotation_speed * delta
 
@@ -225,6 +252,8 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 	position.y = clamp(position.y, 0.0, viewport_size.y)
 
 	$Sprite2D.rotation = 0.0
+	if input_vector.x != 0:
+		$Sprite2D.flip_h = input_vector.x < 0
 
 # ----- LANDING STATE -----
 func landing_update(delta: float) -> void:
@@ -257,13 +286,25 @@ func start_landing() -> void:
 	state = FlyState.LANDING
 	vertical_velocity = velocity.length()
 	landed.emit()
-	_vibrate(0.6, 0.2)
+	_vibrate(1.0, 0.2)
+	if flying_sound and flying_sound.playing:
+		flying_sound.stop()
+	
+	$AnimatedSprite2D.visible = false
+	$AnimatedSprite2D.stop()
+	$Sprite2D.visible = true
 	print("Landing started...")
 
 func start_take_off() -> void:
 	state = FlyState.TAKING_OFF
 	took_off.emit()
-	_vibrate(0.6, 0.3)
+	_vibrate(0.8, 0.3)
+	if flying_sound and not flying_sound.playing:
+		flying_sound.play()
+	
+	$Sprite2D.visible = false
+	$AnimatedSprite2D.visible = true
+	$AnimatedSprite2D.play("flying")
 	print("Taking off...")
 
 # ----- HELPER FUNCTIONS -----
@@ -333,16 +374,16 @@ func shoot() -> void:
 	if projectile_scene == null:
 		print("No projectile scene assigned!")
 		return
-	
-	_vibrate(0.3, 0.1)
-	
+
+	_vibrate(0.1, 0.03)
+
 	var projectile = projectile_scene.instantiate()
 	var offset: Vector2 = Vector2(0, -25).rotated(rotation)
 	projectile.global_position = global_position + offset
 	projectile.direction = Vector2(0, -1).rotated(rotation)
-	
+
 	get_tree().current_scene.add_child(projectile)
-	
+
 	if shoot_sound:
 		shoot_sound.play()
 
@@ -360,8 +401,10 @@ func take_damage() -> void:
 func _start_invincibility() -> void:
 	invincible = true
 	$Sprite2D.modulate = Color(1, 0.5, 0.5)
+	$AnimatedSprite2D.modulate = Color(1, 0.5, 0.5)
 	await get_tree().create_timer(invincibility_duration).timeout
 	$Sprite2D.modulate = Color.WHITE
+	$AnimatedSprite2D.modulate = Color.WHITE
 	invincible = false
 
 func respawn() -> void:
@@ -371,8 +414,13 @@ func respawn() -> void:
 	state = FlyState.FLYING
 	$Sprite2D.scale = original_scale
 	$Sprite2D.rotation = 0.0
+	$AnimatedSprite2D.rotation = 0.0
 	invincible = false
 	$Sprite2D.modulate = Color.WHITE
+	$AnimatedSprite2D.modulate = Color.WHITE
+	$Sprite2D.visible = true
+	$AnimatedSprite2D.visible = false
+	$AnimatedSprite2D.stop()
 	print("Fly respawned (FLYING).")
 
 func _process(delta: float) -> void:

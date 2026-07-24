@@ -24,12 +24,10 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Platform" parent="." unique_id=1887111216 instance=ExtResource("2_paw1w")]
-position = Vector2(360, 900)
 force_variant = 1
 
 [node name="Fly" parent="." unique_id=1584304132 instance=ExtResource("1_2venv")]
 z_index = 1
-position = Vector2(360, 900)
 
 [node name="PlatformManager" type="Node" parent="." unique_id=1790871871]
 script = ExtResource("3_j6w7d")

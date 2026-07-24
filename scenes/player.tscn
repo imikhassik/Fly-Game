@@ -1,8 +1,25 @@
 [gd_scene format=3 uid="uid://4i81gl7adgsh"]
 
-[ext_resource type="Texture2D" uid="uid://c7bnph0b2837v" path="res://assets/fly.PNG" id="1_3vyb7"]
+[ext_resource type="Texture2D" uid="uid://c7bnph0b2837v" path="res://assets/fly/fly.PNG" id="1_3vyb7"]
 [ext_resource type="Script" uid="uid://tg8aya8rdkgt" path="res://scripts/player.gd" id="1_g2els"]
 [ext_resource type="AudioStream" uid="uid://7125lri3bcj3" path="res://assets/audio/fly-projectile-spit-sound.ogg" id="3_qhqgy"]
+[ext_resource type="Texture2D" uid="uid://bv71wtbpchvkv" path="res://assets/fly/flying_animation/frame1.PNG" id="3_tuyoq"]
+[ext_resource type="Texture2D" uid="uid://wwklw3napem7" path="res://assets/fly/flying_animation/frame2.PNG" id="4_fjrip"]
+[ext_resource type="AudioStream" uid="uid://ddoj23guj5fp" path="res://assets/audio/fly-flying.wav" id="5_qlg0r"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1fr2o"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_tuyoq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_fjrip")
+}],
+"loop": 1,
+"name": &"flying",
+"speed": 12.0
+}]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ejr3x"]
 radius = 14.0
@@ -14,15 +31,21 @@ size = Vector2(21, 53)
 [sub_resource type="CircleShape2D" id="CircleShape2D_ejr3x"]
 radius = 5.0
 
-[node name="Fly" type="CharacterBody2D" unique_id=1584304132 node_paths=PackedStringArray("shoot_sound")]
+[node name="Fly" type="CharacterBody2D" unique_id=1584304132 node_paths=PackedStringArray("shoot_sound", "flying_sound")]
 collision_mask = 3
 platform_floor_layers = 4294967292
 script = ExtResource("1_g2els")
 shoot_sound = NodePath("ShootSound")
+flying_sound = NodePath("FlyingSound")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1273881272]
 scale = Vector2(0.1, 0.1)
 texture = ExtResource("1_3vyb7")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1360514945]
+scale = Vector2(0.1, 0.1)
+sprite_frames = SubResource("SpriteFrames_1fr2o")
+animation = &"flying"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1849372521]
 shape = SubResource("CapsuleShape2D_ejr3x")
@@ -45,3 +68,6 @@ debug_color = Color(0.7477854, 0.2613674, 0.93557024, 0.41960785)
 
 [node name="ShootSound" type="AudioStreamPlayer2D" parent="." unique_id=72791274]
 stream = ExtResource("3_qhqgy")
+
+[node name="FlyingSound" type="AudioStreamPlayer2D" parent="." unique_id=761508897]
+stream = ExtResource("5_qlg0r")
