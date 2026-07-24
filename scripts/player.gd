@@ -151,36 +151,42 @@ func _physics_process(delta: float) -> void:
 			take_off_update(delta)
 
 	# ----- SCALING + VISIBILITY -----
-	var target_scale = original_scale
 	match state:
-		FlyState.FLYING:
-			target_scale = original_scale
-			if not $AnimatedSprite2D.visible:
-				$AnimatedSprite2D.visible = true
-				$Sprite2D.visible = false
-				$AnimatedSprite2D.play("flying")
-			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, take_off_scale_speed * delta)
 		FlyState.TAKING_OFF:
-			target_scale = original_scale
 			if not $AnimatedSprite2D.visible:
 				$AnimatedSprite2D.visible = true
 				$Sprite2D.visible = false
 				$AnimatedSprite2D.play("flying")
-			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, take_off_scale_speed * delta)
+			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(original_scale, take_off_scale_speed * delta)
 		FlyState.LANDING:
-			target_scale = original_scale * landing_scale_target
+			var target_scale = original_scale * landing_scale_target
 			if $AnimatedSprite2D.visible:
 				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, landing_scale_speed * delta)
 		FlyState.LANDED:
-			target_scale = original_scale * landing_scale_target
+			var target_scale = original_scale * landing_scale_target
 			if not $Sprite2D.visible:
 				$Sprite2D.visible = true
 				$AnimatedSprite2D.visible = false
 				$AnimatedSprite2D.stop()
-				# Snap to target immediately (no animation)
 				$Sprite2D.scale = target_scale
+		FlyState.FLYING:
+			if not $AnimatedSprite2D.visible:
+				$AnimatedSprite2D.visible = true
+				$Sprite2D.visible = false
+				$AnimatedSprite2D.play("flying")
 		_:
 			pass
+
+	# ----- ANIMATION SPEED (wings flap based on speed) -----
+	if state == FlyState.FLYING or state == FlyState.TAKING_OFF:
+		var current_speed = velocity.length()
+		var min_speed = 0.0
+		var max_speed = forward_speed + up_boost
+		var min_fps = 30.0
+		var max_fps = 60.0
+		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
+		var target_fps = lerp(min_fps, max_fps, t)
+		$AnimatedSprite2D.speed_scale = target_fps / $AnimatedSprite2D.sprite_frames.get_animation_speed("flying")
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
@@ -312,7 +318,6 @@ func start_landing() -> void:
 	if flying_sound and flying_sound.playing:
 		flying_sound.stop()
 	
-	# Switch to animated sprite for landing (it will scale down)
 	$Sprite2D.visible = false
 	$AnimatedSprite2D.visible = true
 	$AnimatedSprite2D.play("flying")
@@ -325,7 +330,6 @@ func start_take_off() -> void:
 	if flying_sound and not flying_sound.playing:
 		flying_sound.play()
 	
-	# Switch to animated sprite for takeoff (it will scale up)
 	$Sprite2D.visible = false
 	$AnimatedSprite2D.visible = true
 	$AnimatedSprite2D.play("flying")
