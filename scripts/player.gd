@@ -40,8 +40,11 @@ var boundary_push: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	original_scale = $Sprite2D.scale
+	# Start with landed sprite at target scale
 	$Sprite2D.scale = original_scale * landing_scale_target
 	$Sprite2D.rotation = 0.0
+	$AnimatedSprite2D.scale = original_scale * landing_scale_target
+	$AnimatedSprite2D.rotation = 0.0
 	z_index = 1
 	add_to_group("player")
 
@@ -59,6 +62,7 @@ func _ready() -> void:
 	if flying_sound:
 		flying_sound.stop()
 
+	# Start with landed sprite visible
 	$Sprite2D.visible = true
 	$AnimatedSprite2D.visible = false
 
@@ -146,17 +150,35 @@ func _physics_process(delta: float) -> void:
 		FlyState.TAKING_OFF:
 			take_off_update(delta)
 
+	# ----- SCALING + VISIBILITY -----
+	var target_scale = original_scale
 	match state:
 		FlyState.FLYING:
+			target_scale = original_scale
 			if not $AnimatedSprite2D.visible:
 				$AnimatedSprite2D.visible = true
 				$Sprite2D.visible = false
 				$AnimatedSprite2D.play("flying")
+			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, take_off_scale_speed * delta)
+		FlyState.TAKING_OFF:
+			target_scale = original_scale
+			if not $AnimatedSprite2D.visible:
+				$AnimatedSprite2D.visible = true
+				$Sprite2D.visible = false
+				$AnimatedSprite2D.play("flying")
+			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, take_off_scale_speed * delta)
+		FlyState.LANDING:
+			target_scale = original_scale * landing_scale_target
+			if $AnimatedSprite2D.visible:
+				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, landing_scale_speed * delta)
 		FlyState.LANDED:
+			target_scale = original_scale * landing_scale_target
 			if not $Sprite2D.visible:
 				$Sprite2D.visible = true
 				$AnimatedSprite2D.visible = false
 				$AnimatedSprite2D.stop()
+				# Snap to target immediately (no animation)
+				$Sprite2D.scale = target_scale
 		_:
 			pass
 
@@ -264,7 +286,7 @@ func landing_update(delta: float) -> void:
 	move_and_slide()
 
 	if abs(vertical_velocity) < 1.0:
-		if $Sprite2D.scale.distance_to(original_scale * landing_scale_target) < 0.001:
+		if $AnimatedSprite2D.scale.distance_to(original_scale * landing_scale_target) < 0.001:
 			state = FlyState.LANDED
 			velocity = Vector2.ZERO
 			print("Landed!")
@@ -276,7 +298,7 @@ func take_off_update(_delta: float) -> void:
 	velocity += boundary_push
 	move_and_slide()
 
-	if $Sprite2D.scale.distance_to(original_scale) < 0.01:
+	if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.01:
 		state = FlyState.FLYING
 		velocity = Vector2.ZERO
 		print("Take off complete!")
@@ -290,9 +312,10 @@ func start_landing() -> void:
 	if flying_sound and flying_sound.playing:
 		flying_sound.stop()
 	
-	$AnimatedSprite2D.visible = false
-	$AnimatedSprite2D.stop()
-	$Sprite2D.visible = true
+	# Switch to animated sprite for landing (it will scale down)
+	$Sprite2D.visible = false
+	$AnimatedSprite2D.visible = true
+	$AnimatedSprite2D.play("flying")
 	print("Landing started...")
 
 func start_take_off() -> void:
@@ -302,6 +325,7 @@ func start_take_off() -> void:
 	if flying_sound and not flying_sound.playing:
 		flying_sound.play()
 	
+	# Switch to animated sprite for takeoff (it will scale up)
 	$Sprite2D.visible = false
 	$AnimatedSprite2D.visible = true
 	$AnimatedSprite2D.play("flying")
@@ -414,19 +438,12 @@ func respawn() -> void:
 	state = FlyState.FLYING
 	$Sprite2D.scale = original_scale
 	$Sprite2D.rotation = 0.0
+	$AnimatedSprite2D.scale = original_scale
 	$AnimatedSprite2D.rotation = 0.0
 	invincible = false
 	$Sprite2D.modulate = Color.WHITE
 	$AnimatedSprite2D.modulate = Color.WHITE
-	$Sprite2D.visible = true
-	$AnimatedSprite2D.visible = false
-	$AnimatedSprite2D.stop()
+	$Sprite2D.visible = false
+	$AnimatedSprite2D.visible = true
+	$AnimatedSprite2D.play("flying")
 	print("Fly respawned (FLYING).")
-
-func _process(delta: float) -> void:
-	if state == FlyState.LANDING:
-		var target = original_scale * landing_scale_target
-		$Sprite2D.scale = $Sprite2D.scale.move_toward(target, landing_scale_speed * delta)
-	elif state == FlyState.TAKING_OFF:
-		var target = original_scale
-		$Sprite2D.scale = $Sprite2D.scale.move_toward(target, take_off_scale_speed * delta)
