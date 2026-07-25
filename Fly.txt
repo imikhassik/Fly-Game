@@ -1,3 +1,10 @@
+Focus:
+Fly control and animation
+
+Focus next:
+Buffs to enhance control and shooting
+
+
 Fly Game ideas
 
 Goal of the game
@@ -34,5 +41,9 @@ I need to focus on every aspect of fly control satisfaction. I want to make just
 This means i need to focus on animation and sounds for the fly to start with.
 
 I want to take steam by storm of how cute and satisfying the fly game is.
+
+
+
+
 
 

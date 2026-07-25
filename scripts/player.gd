@@ -28,6 +28,12 @@ var state: FlyState = FlyState.LANDED
 @export var boundary_margin: float = 100.0
 @export var boundary_push_strength: float = 400.0
 
+# ----- DEFORMATION (stretch & squash) -----
+@export var min_fps: float = 8.0
+@export var max_fps: float = 48.0
+@export var stretch_amount: float = 0.10   # Max stretch (15%)
+@export var squash_amount: float = 0.05   # Max squash (10%)
+
 var health: int
 var invincible: bool = false
 
@@ -182,11 +188,24 @@ func _physics_process(delta: float) -> void:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
 		var max_speed = forward_speed + up_boost
-		var min_fps = 30.0
-		var max_fps = 60.0
 		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
 		var target_fps = lerp(min_fps, max_fps, t)
 		$AnimatedSprite2D.speed_scale = target_fps / $AnimatedSprite2D.sprite_frames.get_animation_speed("flying")
+
+	# ----- SPEED-BASED DEFORMATION (stretch & squash) -----
+	if state == FlyState.FLYING:
+		var current_speed = velocity.length()
+		var min_speed = 0.0
+		var max_speed = forward_speed + up_boost
+		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
+		
+		var stretch_factor = 1.0 + t * stretch_amount
+		var squash_factor = 1.0 - t * squash_amount
+		
+		$AnimatedSprite2D.scale = Vector2(
+			original_scale.x * squash_factor,
+			original_scale.y * stretch_factor
+		)
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
