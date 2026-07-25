@@ -31,8 +31,8 @@ var state: FlyState = FlyState.LANDED
 # ----- DEFORMATION (stretch & squash) -----
 @export var min_fps: float = 8.0
 @export var max_fps: float = 48.0
-@export var stretch_amount: float = 0.10   # Max stretch (15%)
-@export var squash_amount: float = 0.05   # Max squash (10%)
+@export var stretch_amount: float = 0.13
+@export var squash_amount: float = 0.10
 
 var health: int
 var invincible: bool = false
@@ -43,6 +43,8 @@ var respawn_position: Vector2 = Vector2.ZERO
 var shoot_timer: float = 0.0
 
 var boundary_push: Vector2 = Vector2.ZERO
+var current_deformation: float = 0.0
+var is_fully_scaled: bool = false
 
 func _ready() -> void:
 	original_scale = $Sprite2D.scale
@@ -164,10 +166,13 @@ func _physics_process(delta: float) -> void:
 				$Sprite2D.visible = false
 				$AnimatedSprite2D.play("flying")
 			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(original_scale, take_off_scale_speed * delta)
+			is_fully_scaled = false
+			current_deformation = 0.0
 		FlyState.LANDING:
 			var target_scale = original_scale * landing_scale_target
 			if $AnimatedSprite2D.visible:
 				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, landing_scale_speed * delta)
+			is_fully_scaled = false
 		FlyState.LANDED:
 			var target_scale = original_scale * landing_scale_target
 			if not $Sprite2D.visible:
@@ -175,15 +180,23 @@ func _physics_process(delta: float) -> void:
 				$AnimatedSprite2D.visible = false
 				$AnimatedSprite2D.stop()
 				$Sprite2D.scale = target_scale
+			is_fully_scaled = false
 		FlyState.FLYING:
 			if not $AnimatedSprite2D.visible:
 				$AnimatedSprite2D.visible = true
 				$Sprite2D.visible = false
 				$AnimatedSprite2D.play("flying")
+			# Continue scaling if not yet fully scaled
+			if not is_fully_scaled:
+				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(original_scale, take_off_scale_speed * delta)
+				if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.0001:
+					$AnimatedSprite2D.scale = original_scale
+					is_fully_scaled = true
+				current_deformation = 0.0
 		_:
 			pass
 
-	# ----- ANIMATION SPEED (wings flap based on speed) -----
+	# ----- ANIMATION SPEED -----
 	if state == FlyState.FLYING or state == FlyState.TAKING_OFF:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
@@ -192,16 +205,17 @@ func _physics_process(delta: float) -> void:
 		var target_fps = lerp(min_fps, max_fps, t)
 		$AnimatedSprite2D.speed_scale = target_fps / $AnimatedSprite2D.sprite_frames.get_animation_speed("flying")
 
-	# ----- SPEED-BASED DEFORMATION (stretch & squash) -----
-	if state == FlyState.FLYING:
+	# ----- SMOOTH DEFORMATION (only when fully scaled) -----
+	if state == FlyState.FLYING and is_fully_scaled:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
 		var max_speed = forward_speed + up_boost
-		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
-		
-		var stretch_factor = 1.0 + t * stretch_amount
-		var squash_factor = 1.0 - t * squash_amount
-		
+		var target_deformation = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
+		current_deformation = move_toward(current_deformation, target_deformation, 2.0 * delta)
+
+		var stretch_factor = 1.0 + current_deformation * stretch_amount
+		var squash_factor = 1.0 - current_deformation * squash_amount
+
 		$AnimatedSprite2D.scale = Vector2(
 			original_scale.x * squash_factor,
 			original_scale.y * stretch_factor
@@ -323,7 +337,8 @@ func take_off_update(_delta: float) -> void:
 	velocity += boundary_push
 	move_and_slide()
 
-	if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.01:
+	# Switch to FLYING only when scale is exactly original_scale (within tiny tolerance)
+	if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.0001:
 		state = FlyState.FLYING
 		velocity = Vector2.ZERO
 		print("Take off complete!")
@@ -463,6 +478,7 @@ func respawn() -> void:
 	$Sprite2D.rotation = 0.0
 	$AnimatedSprite2D.scale = original_scale
 	$AnimatedSprite2D.rotation = 0.0
+	is_fully_scaled = true
 	invincible = false
 	$Sprite2D.modulate = Color.WHITE
 	$AnimatedSprite2D.modulate = Color.WHITE

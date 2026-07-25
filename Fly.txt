@@ -1,5 +1,7 @@
 Focus:
-Fly control and animation
+Fly control and animation. Flying and take off animation. 
+Then landing.
+Then fly on platform animation.
 
 Focus next:
 Buffs to enhance control and shooting
