@@ -1,7 +1,11 @@
 Focus:
 Fly control and animation. Flying and take off animation. 
+Legs in flight, legs shifting from landed to in flight position.
+Change flying animation legs to full flight position.
+Animate walking on platform.
+Take off --> take whatever walking frame and gradually shift to flying position if possible.
+
 Then landing.
-Then fly on platform animation.
 
 Focus next:
 Buffs to enhance control and shooting

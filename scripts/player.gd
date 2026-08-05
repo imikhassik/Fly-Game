@@ -12,8 +12,8 @@ var state: FlyState = FlyState.LANDED
 @export var up_boost: float = 160.0
 @export var landing_deceleration: float = 200.0
 @export var landing_scale_target: float = 0.75
-@export var landing_scale_speed: float = 0.03
-@export var take_off_scale_speed: float = 0.03
+@export var landing_scale_speed: float = 0.25   # half of platform scale_speed (0.5)
+@export var take_off_scale_speed: float = 0.25   # half of platform scale_speed (0.5)
 @export var takeoff_forward_speed: float = 150.0
 @export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
 @export var shoot_sound: AudioStreamPlayer2D
@@ -34,10 +34,13 @@ var state: FlyState = FlyState.LANDED
 @export var stretch_amount: float = 0.13
 @export var squash_amount: float = 0.10
 
+# ----- LEG TRANSITION -----
+@export var leg_transition_duration: float = 0.3
+
 var health: int
 var invincible: bool = false
 
-var original_scale: Vector2 = Vector2.ONE
+var fly_visuals_base_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
 var respawn_position: Vector2 = Vector2.ZERO
 var shoot_timer: float = 0.0
@@ -45,14 +48,13 @@ var shoot_timer: float = 0.0
 var boundary_push: Vector2 = Vector2.ZERO
 var current_deformation: float = 0.0
 var is_fully_scaled: bool = false
+var facing_direction: int = 1
 
 func _ready() -> void:
-	original_scale = $Sprite2D.scale
-	# Start with landed sprite at target scale
-	$Sprite2D.scale = original_scale * landing_scale_target
-	$Sprite2D.rotation = 0.0
-	$AnimatedSprite2D.scale = original_scale * landing_scale_target
-	$AnimatedSprite2D.rotation = 0.0
+	fly_visuals_base_scale = $FlyVisuals.scale
+	print("FlyVisuals base scale: ", fly_visuals_base_scale)
+	
+	$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 	z_index = 1
 	add_to_group("player")
 
@@ -70,9 +72,13 @@ func _ready() -> void:
 	if flying_sound:
 		flying_sound.stop()
 
-	# Start with landed sprite visible
-	$Sprite2D.visible = true
-	$AnimatedSprite2D.visible = false
+	$FlyVisuals/Sprite2D.visible = true
+	$FlyVisuals/Body_Wings.visible = false
+
+	$FlyVisuals/Legs/NeutralLegs.visible = true
+	$FlyVisuals/Legs/WalkingLegs.visible = false
+	$FlyVisuals/Legs/FlyingLegs.visible = false
+	$FlyVisuals/Legs/WalkingLegs.stop()
 
 	call_deferred("_set_initial_position")
 
@@ -151,62 +157,73 @@ func _physics_process(delta: float) -> void:
 	match state:
 		FlyState.FLYING:
 			flying_update(input_vector, delta, using_controller, raw_stick)
+		FlyState.TAKING_OFF:
+			takeoff_update(delta)
 		FlyState.LANDING:
 			landing_update(delta)
 		FlyState.LANDED:
 			landed_update(input_vector, delta, using_controller)
-		FlyState.TAKING_OFF:
-			take_off_update(delta)
 
 	# ----- SCALING + VISIBILITY -----
 	match state:
 		FlyState.TAKING_OFF:
-			if not $AnimatedSprite2D.visible:
-				$AnimatedSprite2D.visible = true
-				$Sprite2D.visible = false
-				$AnimatedSprite2D.play("flying")
-			$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(original_scale, take_off_scale_speed * delta)
+			if not $FlyVisuals/Body_Wings.visible:
+				$FlyVisuals/Body_Wings.visible = true
+				$FlyVisuals/Sprite2D.visible = false
+				$FlyVisuals/Body_Wings.play("flying")
+			$FlyVisuals.scale = $FlyVisuals.scale.move_toward(fly_visuals_base_scale, take_off_scale_speed * delta)
 			is_fully_scaled = false
 			current_deformation = 0.0
+			if $FlyVisuals.scale.distance_to(fly_visuals_base_scale) < 0.001:
+				$FlyVisuals.scale = fly_visuals_base_scale
+				state = FlyState.FLYING
+				is_fully_scaled = true
+				print("Take off complete!")
 		FlyState.LANDING:
-			var target_scale = original_scale * landing_scale_target
-			if $AnimatedSprite2D.visible:
-				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(target_scale, landing_scale_speed * delta)
 			is_fully_scaled = false
+			current_deformation = 0.0
+			var target_scale = fly_visuals_base_scale * landing_scale_target
+			if $FlyVisuals/Body_Wings.visible:
+				$FlyVisuals.scale = $FlyVisuals.scale.move_toward(target_scale, landing_scale_speed * delta)
+			print("LANDING: scale = ", $FlyVisuals.scale)
 		FlyState.LANDED:
-			var target_scale = original_scale * landing_scale_target
-			if not $Sprite2D.visible:
-				$Sprite2D.visible = true
-				$AnimatedSprite2D.visible = false
-				$AnimatedSprite2D.stop()
-				$Sprite2D.scale = target_scale
+			print("LANDED branch reached!")
+			if not $FlyVisuals/Sprite2D.visible:
+				$FlyVisuals/Sprite2D.visible = true
+				$FlyVisuals/Body_Wings.visible = false
+				$FlyVisuals/Body_Wings.stop()
+				print("Switched to Sprite2D, stopped Body_Wings")
+			$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 			is_fully_scaled = false
+			current_deformation = 0.0
+			facing_direction = 1
+			print("LANDED: scale reset to ", $FlyVisuals.scale, " is_fully_scaled=", is_fully_scaled)
 		FlyState.FLYING:
-			if not $AnimatedSprite2D.visible:
-				$AnimatedSprite2D.visible = true
-				$Sprite2D.visible = false
-				$AnimatedSprite2D.play("flying")
-			# Continue scaling if not yet fully scaled
+			if not $FlyVisuals/Body_Wings.visible:
+				$FlyVisuals/Body_Wings.visible = true
+				$FlyVisuals/Sprite2D.visible = false
+				$FlyVisuals/Body_Wings.play("flying")
 			if not is_fully_scaled:
-				$AnimatedSprite2D.scale = $AnimatedSprite2D.scale.move_toward(original_scale, take_off_scale_speed * delta)
-				if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.0001:
-					$AnimatedSprite2D.scale = original_scale
+				$FlyVisuals.scale = $FlyVisuals.scale.move_toward(fly_visuals_base_scale, take_off_scale_speed * delta)
+				if $FlyVisuals.scale.distance_to(fly_visuals_base_scale) < 0.001:
+					$FlyVisuals.scale = fly_visuals_base_scale
 					is_fully_scaled = true
 				current_deformation = 0.0
 		_:
 			pass
 
-	# ----- ANIMATION SPEED -----
+	# ----- ANIMATION SPEED (wings) -----
 	if state == FlyState.FLYING or state == FlyState.TAKING_OFF:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
 		var max_speed = forward_speed + up_boost
 		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
 		var target_fps = lerp(min_fps, max_fps, t)
-		$AnimatedSprite2D.speed_scale = target_fps / $AnimatedSprite2D.sprite_frames.get_animation_speed("flying")
+		$FlyVisuals/Body_Wings.speed_scale = target_fps / $FlyVisuals/Body_Wings.sprite_frames.get_animation_speed("flying")
 
-	# ----- SMOOTH DEFORMATION (only when fully scaled) -----
+	# ----- DEFORMATION (only in FLYING and fully scaled) -----
 	if state == FlyState.FLYING and is_fully_scaled:
+		print("DEFORMATION running in FLYING")
 		var current_speed = velocity.length()
 		var min_speed = 0.0
 		var max_speed = forward_speed + up_boost
@@ -216,12 +233,12 @@ func _physics_process(delta: float) -> void:
 		var stretch_factor = 1.0 + current_deformation * stretch_amount
 		var squash_factor = 1.0 - current_deformation * squash_amount
 
-		$AnimatedSprite2D.scale = Vector2(
-			original_scale.x * squash_factor,
-			original_scale.y * stretch_factor
+		$FlyVisuals.scale = Vector2(
+			fly_visuals_base_scale.x * squash_factor * facing_direction,
+			fly_visuals_base_scale.y * stretch_factor
 		)
 
-# ----- FLYING STATE -----
+# ----- FLYING STATE (unchanged) -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
 	var fly_speed: float
 	var move_dir: Vector2
@@ -243,9 +260,8 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
 		
-		$AnimatedSprite2D.rotation = 0.0
 		if input_vector.x != 0:
-			$AnimatedSprite2D.flip_h = input_vector.x < 0
+			facing_direction = 1 if input_vector.x >= 0 else -1
 		return
 
 	if abs(input_vector.x) > 0.01:
@@ -264,12 +280,19 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 	position.x = clamp(position.x, 0.0, viewport_size.x)
 	position.y = clamp(position.y, 0.0, viewport_size.y)
 
-	$AnimatedSprite2D.rotation = 0.0
 	if input_vector.x != 0:
-		$AnimatedSprite2D.flip_h = input_vector.x < 0
+		facing_direction = 1 if input_vector.x >= 0 else -1
 
-# ----- LANDED (WALKING) STATE -----
+# ----- TAKEOFF STATE (forward only) -----
+func takeoff_update(delta: float) -> void:
+	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
+	velocity = forward_dir * takeoff_forward_speed
+	velocity += boundary_push
+	move_and_slide()
+
+# ----- LANDED (WALKING) STATE (unchanged) -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
+	print("landed_update called")
 	var move_dir: Vector2
 	var viewport_size: Vector2
 
@@ -288,9 +311,25 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
 		
-		$Sprite2D.rotation = 0.0
 		if input_vector.x != 0:
-			$Sprite2D.flip_h = input_vector.x < 0
+			facing_direction = 1 if input_vector.x >= 0 else -1
+		
+		if input_vector.y < 0 and _is_head_on_platform():
+			if not $FlyVisuals/Legs/WalkingLegs.visible:
+				$FlyVisuals/Legs/NeutralLegs.visible = false
+				$FlyVisuals/Legs/WalkingLegs.visible = true
+				$FlyVisuals/Legs/FlyingLegs.visible = false
+				$FlyVisuals/Legs/WalkingLegs.play("walk")
+			var current_speed = velocity.length()
+			var max_speed = walk_speed
+			var t = clamp(current_speed / max_speed, 0.0, 1.0)
+			var target_fps = lerp(6.0, 24.0, t)
+			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+		else:
+			if $FlyVisuals/Legs/WalkingLegs.visible:
+				$FlyVisuals/Legs/WalkingLegs.stop()
+				$FlyVisuals/Legs/WalkingLegs.visible = false
+				$FlyVisuals/Legs/NeutralLegs.visible = true
 		return
 
 	if abs(input_vector.x) > 0.01:
@@ -312,9 +351,25 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 	position.x = clamp(position.x, 0.0, viewport_size.x)
 	position.y = clamp(position.y, 0.0, viewport_size.y)
 
-	$Sprite2D.rotation = 0.0
 	if input_vector.x != 0:
-		$Sprite2D.flip_h = input_vector.x < 0
+		facing_direction = 1 if input_vector.x >= 0 else -1
+
+	if input_vector.y < 0 and _is_head_on_platform():
+		if not $FlyVisuals/Legs/WalkingLegs.visible:
+			$FlyVisuals/Legs/NeutralLegs.visible = false
+			$FlyVisuals/Legs/WalkingLegs.visible = true
+			$FlyVisuals/Legs/FlyingLegs.visible = false
+			$FlyVisuals/Legs/WalkingLegs.play("walk")
+		var current_speed = velocity.length()
+		var max_speed = walk_speed
+		var t = clamp(current_speed / max_speed, 0.0, 1.0)
+		var target_fps = lerp(6.0, 24.0, t)
+		$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+	else:
+		if $FlyVisuals/Legs/WalkingLegs.visible:
+			$FlyVisuals/Legs/WalkingLegs.stop()
+			$FlyVisuals/Legs/WalkingLegs.visible = false
+			$FlyVisuals/Legs/NeutralLegs.visible = true
 
 # ----- LANDING STATE -----
 func landing_update(delta: float) -> void:
@@ -325,23 +380,10 @@ func landing_update(delta: float) -> void:
 	move_and_slide()
 
 	if abs(vertical_velocity) < 1.0:
-		if $AnimatedSprite2D.scale.distance_to(original_scale * landing_scale_target) < 0.001:
+		if $FlyVisuals.scale.distance_to(fly_visuals_base_scale * landing_scale_target) < 0.001:
 			state = FlyState.LANDED
 			velocity = Vector2.ZERO
 			print("Landed!")
-
-# ----- TAKING OFF STATE -----
-func take_off_update(_delta: float) -> void:
-	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
-	velocity = forward_dir * takeoff_forward_speed
-	velocity += boundary_push
-	move_and_slide()
-
-	# Switch to FLYING only when scale is exactly original_scale (within tiny tolerance)
-	if $AnimatedSprite2D.scale.distance_to(original_scale) < 0.0001:
-		state = FlyState.FLYING
-		velocity = Vector2.ZERO
-		print("Take off complete!")
 
 # ----- TRANSITION TRIGGERS -----
 func start_landing() -> void:
@@ -352,9 +394,26 @@ func start_landing() -> void:
 	if flying_sound and flying_sound.playing:
 		flying_sound.stop()
 	
-	$Sprite2D.visible = false
-	$AnimatedSprite2D.visible = true
-	$AnimatedSprite2D.play("flying")
+	# Snap to base scale to remove deformation, then scale down
+	$FlyVisuals.scale = fly_visuals_base_scale
+	is_fully_scaled = false
+	current_deformation = 0.0
+	
+	$FlyVisuals/Sprite2D.visible = false
+	$FlyVisuals/Body_Wings.visible = true
+	$FlyVisuals/Body_Wings.play("flying")
+	
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 0.0, leg_transition_duration)
+	tween.tween_property($FlyVisuals/Legs/NeutralLegs, "modulate:a", 1.0, leg_transition_duration)
+	tween.tween_callback(func(): 
+		$FlyVisuals/Legs/FlyingLegs.visible = false
+		$FlyVisuals/Legs/NeutralLegs.visible = true
+		$FlyVisuals/Legs/WalkingLegs.visible = false
+		$FlyVisuals/Legs/WalkingLegs.stop()
+	).set_delay(leg_transition_duration)
+	
 	print("Landing started...")
 
 func start_take_off() -> void:
@@ -364,12 +423,25 @@ func start_take_off() -> void:
 	if flying_sound and not flying_sound.playing:
 		flying_sound.play()
 	
-	$Sprite2D.visible = false
-	$AnimatedSprite2D.visible = true
-	$AnimatedSprite2D.play("flying")
+	$FlyVisuals/Sprite2D.visible = false
+	$FlyVisuals/Body_Wings.visible = true
+	$FlyVisuals/Body_Wings.play("flying")
+	
+	var current_legs = $FlyVisuals/Legs/WalkingLegs if $FlyVisuals/Legs/WalkingLegs.visible else $FlyVisuals/Legs/NeutralLegs
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(current_legs, "modulate:a", 0.0, leg_transition_duration)
+	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 1.0, leg_transition_duration)
+	tween.tween_callback(func(): 
+		$FlyVisuals/Legs/WalkingLegs.visible = false
+		$FlyVisuals/Legs/NeutralLegs.visible = false
+		$FlyVisuals/Legs/FlyingLegs.visible = true
+		$FlyVisuals/Legs/WalkingLegs.stop()
+	).set_delay(leg_transition_duration)
+	
 	print("Taking off...")
 
-# ----- HELPER FUNCTIONS -----
+# ----- HELPER FUNCTIONS (unchanged) -----
 func _get_platform_polygon_global(area: Area2D) -> PackedVector2Array:
 	var platform_collision = area.get_node("CollisionPolygon2D")
 	if not platform_collision:
@@ -462,11 +534,9 @@ func take_damage() -> void:
 
 func _start_invincibility() -> void:
 	invincible = true
-	$Sprite2D.modulate = Color(1, 0.5, 0.5)
-	$AnimatedSprite2D.modulate = Color(1, 0.5, 0.5)
+	$FlyVisuals.modulate = Color(1, 0.5, 0.5)
 	await get_tree().create_timer(invincibility_duration).timeout
-	$Sprite2D.modulate = Color.WHITE
-	$AnimatedSprite2D.modulate = Color.WHITE
+	$FlyVisuals.modulate = Color.WHITE
 	invincible = false
 
 func respawn() -> void:
@@ -474,15 +544,18 @@ func respawn() -> void:
 	health = max_health
 	velocity = Vector2.ZERO
 	state = FlyState.FLYING
-	$Sprite2D.scale = original_scale
-	$Sprite2D.rotation = 0.0
-	$AnimatedSprite2D.scale = original_scale
-	$AnimatedSprite2D.rotation = 0.0
+	$FlyVisuals.scale = fly_visuals_base_scale
 	is_fully_scaled = true
+	facing_direction = 1
 	invincible = false
-	$Sprite2D.modulate = Color.WHITE
-	$AnimatedSprite2D.modulate = Color.WHITE
-	$Sprite2D.visible = false
-	$AnimatedSprite2D.visible = true
-	$AnimatedSprite2D.play("flying")
+	$FlyVisuals.modulate = Color.WHITE
+	$FlyVisuals/Sprite2D.visible = false
+	$FlyVisuals/Body_Wings.visible = true
+	$FlyVisuals/Body_Wings.play("flying")
+	
+	$FlyVisuals/Legs/NeutralLegs.visible = false
+	$FlyVisuals/Legs/WalkingLegs.visible = false
+	$FlyVisuals/Legs/FlyingLegs.visible = true
+	$FlyVisuals/Legs/WalkingLegs.stop()
+	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
 	print("Fly respawned (FLYING).")

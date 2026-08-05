@@ -10,6 +10,22 @@
 [ext_resource type="Texture2D" uid="uid://wwklw3napem7" path="res://assets/fly/flying_animation/frame3.PNG" id="5_y4r1p"]
 [ext_resource type="Texture2D" uid="uid://lhima6pg2qn1" path="res://assets/fly/flying_animation/frame6.PNG" id="6_ur7pv"]
 [ext_resource type="Texture2D" uid="uid://b0k65153b2ti" path="res://assets/fly/flying_animation/frame5.PNG" id="7_d2wvv"]
+[ext_resource type="Texture2D" uid="uid://cblaccaw2elet" path="res://assets/fly/legs/flying_legs.PNG" id="11_oprun"]
+[ext_resource type="Texture2D" uid="uid://dgx3iiuh3gpy8" path="res://assets/fly/legs/walking_animation/frame1.PNG" id="12_a8ls1"]
+[ext_resource type="Texture2D" uid="uid://bcokw7upvc2ig" path="res://assets/fly/legs/walking_animation/frame2.PNG" id="13_qfm1y"]
+[ext_resource type="Texture2D" uid="uid://7gnjv5cx7241" path="res://assets/fly/legs/walking_animation/frame3.PNG" id="14_fulsm"]
+[ext_resource type="Texture2D" uid="uid://lu8y644vg8cf" path="res://assets/fly/legs/walking_animation/frame4.PNG" id="15_4r5pv"]
+[ext_resource type="Texture2D" uid="uid://d1mvxjiuvdnv0" path="res://assets/fly/legs/neutral_legs.PNG" id="16_a8ls1"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ejr3x"]
+radius = 14.0
+height = 64.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_j6w7d"]
+size = Vector2(21, 53)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ejr3x"]
+radius = 5.0
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_1fr2o"]
 animations = [{
@@ -37,15 +53,25 @@ animations = [{
 "speed": 60.0
 }]
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ejr3x"]
-radius = 14.0
-height = 64.0
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_j6w7d"]
-size = Vector2(21, 53)
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_ejr3x"]
-radius = 5.0
+[sub_resource type="SpriteFrames" id="SpriteFrames_y4r1p"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("12_a8ls1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_qfm1y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_fulsm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_4r5pv")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 12.0
+}]
 
 [node name="Fly" type="CharacterBody2D" unique_id=1584304132 node_paths=PackedStringArray("shoot_sound", "flying_sound")]
 collision_mask = 3
@@ -53,15 +79,6 @@ platform_floor_layers = 4294967292
 script = ExtResource("1_g2els")
 shoot_sound = NodePath("ShootSound")
 flying_sound = NodePath("FlyingSound")
-
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1273881272]
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("1_3vyb7")
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1360514945]
-scale = Vector2(0.1, 0.1)
-sprite_frames = SubResource("SpriteFrames_1fr2o")
-animation = &"flying"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1849372521]
 shape = SubResource("CapsuleShape2D_ejr3x")
@@ -87,3 +104,29 @@ stream = ExtResource("3_qhqgy")
 
 [node name="FlyingSound" type="AudioStreamPlayer2D" parent="." unique_id=761508897]
 stream = ExtResource("5_qlg0r")
+
+[node name="FlyVisuals" type="Node2D" parent="." unique_id=1549313574]
+
+[node name="Sprite2D" type="Sprite2D" parent="FlyVisuals" unique_id=1273881272]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("1_3vyb7")
+
+[node name="Body_Wings" type="AnimatedSprite2D" parent="FlyVisuals" unique_id=1360514945]
+scale = Vector2(0.1, 0.1)
+sprite_frames = SubResource("SpriteFrames_1fr2o")
+animation = &"flying"
+
+[node name="Legs" type="Node2D" parent="FlyVisuals" unique_id=1176125828]
+
+[node name="FlyingLegs" type="Sprite2D" parent="FlyVisuals/Legs" unique_id=1261021537]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("11_oprun")
+
+[node name="WalkingLegs" type="AnimatedSprite2D" parent="FlyVisuals/Legs" unique_id=1110492010]
+scale = Vector2(0.1, 0.1)
+sprite_frames = SubResource("SpriteFrames_y4r1p")
+animation = &"walk"
+
+[node name="NeutralLegs" type="Sprite2D" parent="FlyVisuals/Legs" unique_id=934327815]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("16_a8ls1")
