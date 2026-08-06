@@ -12,8 +12,8 @@ var state: FlyState = FlyState.LANDED
 @export var up_boost: float = 160.0
 @export var landing_deceleration: float = 200.0
 @export var landing_scale_target: float = 0.75
-@export var landing_scale_speed: float = 0.25   # half of platform scale_speed (0.5)
-@export var take_off_scale_speed: float = 0.25   # half of platform scale_speed (0.5)
+@export var landing_scale_speed: float = 0.25
+@export var take_off_scale_speed: float = 0.25
 @export var takeoff_forward_speed: float = 150.0
 @export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
 @export var shoot_sound: AudioStreamPlayer2D
@@ -36,6 +36,7 @@ var state: FlyState = FlyState.LANDED
 
 # ----- LEG TRANSITION -----
 @export var leg_transition_duration: float = 0.3
+@export var turn_animation_speed: float = 1.0
 
 var health: int
 var invincible: bool = false
@@ -238,7 +239,7 @@ func _physics_process(delta: float) -> void:
 			fly_visuals_base_scale.y * stretch_factor
 		)
 
-# ----- FLYING STATE (unchanged) -----
+# ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
 	var fly_speed: float
 	var move_dir: Vector2
@@ -290,7 +291,7 @@ func takeoff_update(delta: float) -> void:
 	velocity += boundary_push
 	move_and_slide()
 
-# ----- LANDED (WALKING) STATE (unchanged) -----
+# ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
 	print("landed_update called")
 	var move_dir: Vector2
@@ -314,17 +315,25 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		if input_vector.x != 0:
 			facing_direction = 1 if input_vector.x >= 0 else -1
 		
-		if input_vector.y < 0 and _is_head_on_platform():
+		# ----- LEG ANIMATION (controller) -----
+		var should_walk = (input_vector.y < 0 or input_vector.x != 0) and _is_head_on_platform()
+		print("should_walk: ", should_walk, " Neutral: ", $FlyVisuals/Legs/NeutralLegs.visible, " Walking: ", $FlyVisuals/Legs/WalkingLegs.visible, " Flying: ", $FlyVisuals/Legs/FlyingLegs.visible)
+		if should_walk:
 			if not $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/NeutralLegs.visible = false
 				$FlyVisuals/Legs/WalkingLegs.visible = true
 				$FlyVisuals/Legs/FlyingLegs.visible = false
+			if not $FlyVisuals/Legs/WalkingLegs.is_playing():
 				$FlyVisuals/Legs/WalkingLegs.play("walk")
-			var current_speed = velocity.length()
-			var max_speed = walk_speed
-			var t = clamp(current_speed / max_speed, 0.0, 1.0)
-			var target_fps = lerp(6.0, 24.0, t)
-			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+			if input_vector.y < 0:
+				var current_speed = velocity.length()
+				var max_speed = walk_speed
+				var t = clamp(current_speed / max_speed, 0.0, 1.0)
+				var target_fps = lerp(6.0, 24.0, t)
+				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+			else:
+				# Turning in place
+				$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
 		else:
 			if $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/WalkingLegs.stop()
@@ -332,6 +341,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 				$FlyVisuals/Legs/NeutralLegs.visible = true
 		return
 
+	# ----- KEYBOARD -----
 	if abs(input_vector.x) > 0.01:
 		rotation += input_vector.x * rotation_speed * delta
 
@@ -354,17 +364,25 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 	if input_vector.x != 0:
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
-	if input_vector.y < 0 and _is_head_on_platform():
+	# ----- LEG ANIMATION (keyboard) -----
+	var should_walk = (input_vector.y < 0 or input_vector.x != 0) and _is_head_on_platform()
+	print("should_walk: ", should_walk, " Neutral: ", $FlyVisuals/Legs/NeutralLegs.visible, " Walking: ", $FlyVisuals/Legs/WalkingLegs.visible, " Flying: ", $FlyVisuals/Legs/FlyingLegs.visible)
+	if should_walk:
 		if not $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/NeutralLegs.visible = false
 			$FlyVisuals/Legs/WalkingLegs.visible = true
 			$FlyVisuals/Legs/FlyingLegs.visible = false
+		if not $FlyVisuals/Legs/WalkingLegs.is_playing():
 			$FlyVisuals/Legs/WalkingLegs.play("walk")
-		var current_speed = velocity.length()
-		var max_speed = walk_speed
-		var t = clamp(current_speed / max_speed, 0.0, 1.0)
-		var target_fps = lerp(6.0, 24.0, t)
-		$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+		if input_vector.y < 0:
+			var current_speed = velocity.length()
+			var max_speed = walk_speed
+			var t = clamp(current_speed / max_speed, 0.0, 1.0)
+			var target_fps = lerp(6.0, 24.0, t)
+			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+		else:
+			# Turning in place
+			$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
 	else:
 		if $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/WalkingLegs.stop()
@@ -394,7 +412,6 @@ func start_landing() -> void:
 	if flying_sound and flying_sound.playing:
 		flying_sound.stop()
 	
-	# Snap to base scale to remove deformation, then scale down
 	$FlyVisuals.scale = fly_visuals_base_scale
 	is_fully_scaled = false
 	current_deformation = 0.0
@@ -403,16 +420,17 @@ func start_landing() -> void:
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
 	
+	# ----- LEG TRANSITION (Fly -> Neutral) -----
+	$FlyVisuals/Legs/FlyingLegs.visible = true
+	$FlyVisuals/Legs/NeutralLegs.visible = true
+	$FlyVisuals/Legs/WalkingLegs.visible = false
+	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
+	$FlyVisuals/Legs/NeutralLegs.modulate.a = 0.0
+	
 	var tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/NeutralLegs, "modulate:a", 1.0, leg_transition_duration)
-	tween.tween_callback(func(): 
-		$FlyVisuals/Legs/FlyingLegs.visible = false
-		$FlyVisuals/Legs/NeutralLegs.visible = true
-		$FlyVisuals/Legs/WalkingLegs.visible = false
-		$FlyVisuals/Legs/WalkingLegs.stop()
-	).set_delay(leg_transition_duration)
 	
 	print("Landing started...")
 
@@ -427,21 +445,20 @@ func start_take_off() -> void:
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
 	
+	# ----- LEG TRANSITION (Neutral/Walk -> Fly) -----
 	var current_legs = $FlyVisuals/Legs/WalkingLegs if $FlyVisuals/Legs/WalkingLegs.visible else $FlyVisuals/Legs/NeutralLegs
+	$FlyVisuals/Legs/FlyingLegs.visible = true
+	$FlyVisuals/Legs/FlyingLegs.modulate.a = 0.0
+	current_legs.modulate.a = 1.0
+	
 	var tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(current_legs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 1.0, leg_transition_duration)
-	tween.tween_callback(func(): 
-		$FlyVisuals/Legs/WalkingLegs.visible = false
-		$FlyVisuals/Legs/NeutralLegs.visible = false
-		$FlyVisuals/Legs/FlyingLegs.visible = true
-		$FlyVisuals/Legs/WalkingLegs.stop()
-	).set_delay(leg_transition_duration)
 	
 	print("Taking off...")
 
-# ----- HELPER FUNCTIONS (unchanged) -----
+# ----- HELPER FUNCTIONS -----
 func _get_platform_polygon_global(area: Area2D) -> PackedVector2Array:
 	var platform_collision = area.get_node("CollisionPolygon2D")
 	if not platform_collision:
