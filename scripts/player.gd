@@ -293,6 +293,7 @@ func takeoff_update(delta: float) -> void:
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
+	print("landed_update called")
 	var move_dir: Vector2
 	var viewport_size: Vector2
 
@@ -315,7 +316,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			facing_direction = 1 if input_vector.x >= 0 else -1
 		
 		# ----- LEG ANIMATION (controller) -----
-		var should_walk = (input_vector.length() > 0.1) and _is_head_on_platform()
+		var should_walk = (input_vector.length() > 0) and _is_head_on_platform()
 		if should_walk:
 			if not $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/NeutralLegs.visible = false
@@ -323,15 +324,18 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 				$FlyVisuals/Legs/FlyingLegs.visible = false
 				$FlyVisuals/Legs/WalkingLegs.modulate.a = 1.0
 			$FlyVisuals/Legs/WalkingLegs.play("walk")
+			var base_fps = $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+			# Determine speed: if moving forward (y < 0), use speed-based scaling; else use full speed
 			if input_vector.y < 0:
 				var current_speed = velocity.length()
 				var max_speed = walk_speed
 				var t = clamp(current_speed / max_speed, 0.0, 1.0)
 				var target_fps = lerp(6.0, 24.0, t)
-				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 			else:
-				# Turning in place or moving down (no forward movement)
-				$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
+				# Turning or moving backward/down – use full forward speed
+				var target_fps = 24.0
+				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 		else:
 			if $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/WalkingLegs.stop()
@@ -364,7 +368,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
 	# ----- LEG ANIMATION (keyboard) -----
-	var should_walk = (input_vector.length() > 0.1) and _is_head_on_platform()
+	var should_walk = (input_vector.length() > 0) and _is_head_on_platform()
 	if should_walk:
 		if not $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/NeutralLegs.visible = false
@@ -372,15 +376,17 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			$FlyVisuals/Legs/FlyingLegs.visible = false
 			$FlyVisuals/Legs/WalkingLegs.modulate.a = 1.0
 		$FlyVisuals/Legs/WalkingLegs.play("walk")
+		var base_fps = $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
 		if input_vector.y < 0:
 			var current_speed = velocity.length()
 			var max_speed = walk_speed
 			var t = clamp(current_speed / max_speed, 0.0, 1.0)
 			var target_fps = lerp(6.0, 24.0, t)
-			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
+			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 		else:
-			# Turning in place (keyboard A/D)
-			$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
+			# Turning or pressing S (down) – use full forward speed
+			var target_fps = 24.0
+			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 	else:
 		if $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/WalkingLegs.stop()
