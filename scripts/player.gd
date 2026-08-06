@@ -293,7 +293,6 @@ func takeoff_update(delta: float) -> void:
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
-	print("landed_update called")
 	var move_dir: Vector2
 	var viewport_size: Vector2
 
@@ -316,15 +315,14 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			facing_direction = 1 if input_vector.x >= 0 else -1
 		
 		# ----- LEG ANIMATION (controller) -----
-		var should_walk = (input_vector.y < 0 or input_vector.x != 0) and _is_head_on_platform()
-		print("should_walk: ", should_walk, " Neutral: ", $FlyVisuals/Legs/NeutralLegs.visible, " Walking: ", $FlyVisuals/Legs/WalkingLegs.visible, " Flying: ", $FlyVisuals/Legs/FlyingLegs.visible)
+		var should_walk = (input_vector.length() > 0.1) and _is_head_on_platform()
 		if should_walk:
 			if not $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/NeutralLegs.visible = false
 				$FlyVisuals/Legs/WalkingLegs.visible = true
 				$FlyVisuals/Legs/FlyingLegs.visible = false
-			if not $FlyVisuals/Legs/WalkingLegs.is_playing():
-				$FlyVisuals/Legs/WalkingLegs.play("walk")
+				$FlyVisuals/Legs/WalkingLegs.modulate.a = 1.0
+			$FlyVisuals/Legs/WalkingLegs.play("walk")
 			if input_vector.y < 0:
 				var current_speed = velocity.length()
 				var max_speed = walk_speed
@@ -332,13 +330,14 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 				var target_fps = lerp(6.0, 24.0, t)
 				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
 			else:
-				# Turning in place
+				# Turning in place or moving down (no forward movement)
 				$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
 		else:
 			if $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/WalkingLegs.stop()
 				$FlyVisuals/Legs/WalkingLegs.visible = false
 				$FlyVisuals/Legs/NeutralLegs.visible = true
+				$FlyVisuals/Legs/NeutralLegs.modulate.a = 1.0
 		return
 
 	# ----- KEYBOARD -----
@@ -365,15 +364,14 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
 	# ----- LEG ANIMATION (keyboard) -----
-	var should_walk = (input_vector.y < 0 or input_vector.x != 0) and _is_head_on_platform()
-	print("should_walk: ", should_walk, " Neutral: ", $FlyVisuals/Legs/NeutralLegs.visible, " Walking: ", $FlyVisuals/Legs/WalkingLegs.visible, " Flying: ", $FlyVisuals/Legs/FlyingLegs.visible)
+	var should_walk = (input_vector.length() > 0.1) and _is_head_on_platform()
 	if should_walk:
 		if not $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/NeutralLegs.visible = false
 			$FlyVisuals/Legs/WalkingLegs.visible = true
 			$FlyVisuals/Legs/FlyingLegs.visible = false
-		if not $FlyVisuals/Legs/WalkingLegs.is_playing():
-			$FlyVisuals/Legs/WalkingLegs.play("walk")
+			$FlyVisuals/Legs/WalkingLegs.modulate.a = 1.0
+		$FlyVisuals/Legs/WalkingLegs.play("walk")
 		if input_vector.y < 0:
 			var current_speed = velocity.length()
 			var max_speed = walk_speed
@@ -381,14 +379,15 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			var target_fps = lerp(6.0, 24.0, t)
 			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
 		else:
-			# Turning in place
+			# Turning in place (keyboard A/D)
 			$FlyVisuals/Legs/WalkingLegs.speed_scale = turn_animation_speed
 	else:
 		if $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/WalkingLegs.stop()
 			$FlyVisuals/Legs/WalkingLegs.visible = false
 			$FlyVisuals/Legs/NeutralLegs.visible = true
-
+			$FlyVisuals/Legs/NeutralLegs.modulate.a = 1.0
+			
 # ----- LANDING STATE -----
 func landing_update(delta: float) -> void:
 	vertical_velocity = move_toward(vertical_velocity, 0.0, landing_deceleration * delta)
@@ -421,13 +420,18 @@ func start_landing() -> void:
 	$FlyVisuals/Body_Wings.play("flying")
 	
 	# ----- LEG TRANSITION (Fly -> Neutral) -----
+	# Kill any existing tween to avoid conflicts
+	var tween = get_tree().create_tween()
+	tween.kill()
+	
+	# Set initial states
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/NeutralLegs.visible = true
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
 	$FlyVisuals/Legs/NeutralLegs.modulate.a = 0.0
 	
-	var tween = create_tween()
+	tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/NeutralLegs, "modulate:a", 1.0, leg_transition_duration)
@@ -446,12 +450,16 @@ func start_take_off() -> void:
 	$FlyVisuals/Body_Wings.play("flying")
 	
 	# ----- LEG TRANSITION (Neutral/Walk -> Fly) -----
+	var tween = get_tree().create_tween()
+	tween.kill()
+	
+	# Determine which legs are currently visible
 	var current_legs = $FlyVisuals/Legs/WalkingLegs if $FlyVisuals/Legs/WalkingLegs.visible else $FlyVisuals/Legs/NeutralLegs
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 0.0
 	current_legs.modulate.a = 1.0
 	
-	var tween = create_tween()
+	tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(current_legs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 1.0, leg_transition_duration)
@@ -570,6 +578,7 @@ func respawn() -> void:
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
 	
+	# Legs: set flying legs visible with full alpha
 	$FlyVisuals/Legs/NeutralLegs.visible = false
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.visible = true
