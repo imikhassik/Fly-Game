@@ -10,6 +10,9 @@ extends Node
 @export var flying_scale: float = 0.5
 @export var scale_speed: float = 0.5
 
+@export var food_scene: PackedScene = preload("res://scenes/food.tscn")
+@export var food_spawn_chance: float = 1.0   # 30% chance per platform
+
 var spawn_interval: float = 20.0
 var spawn_timer: float = 0.0
 var is_moving: bool = false
@@ -99,6 +102,13 @@ func spawn_platform() -> void:
 	active_platforms.append(new_platform)
 	
 	print("Platform spawned at: ", new_platform.position)
+	
+	# Spawn food on this platform
+	if food_scene and randf() < food_spawn_chance:
+		var food = food_scene.instantiate()
+		food.position = Vector2(0, -20)   # local offset relative to platform (optional)
+		new_platform.add_child(food)      # make it a child of the platform
+		print("Food spawned on platform at ", new_platform.position + food.position)
 
 func _on_fly_landed() -> void:
 	print("_on_fly_landed() called - pausing movement, scaling to 100%")

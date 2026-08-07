@@ -1,13 +1,4 @@
 Focus:
-Fly control and animation. Flying and take off animation. 
-Legs in flight, legs shifting from landed to in flight position.
-Change flying animation legs to full flight position.
-Animate walking on platform.
-Take off --> take whatever walking frame and gradually shift to flying position if possible.
-
-Then landing.
-
-Focus next:
 Buffs to enhance control and shooting
 
 
@@ -23,7 +14,6 @@ Sometime the platform will contain a male fly and if my fly tries to mate with i
 
 Физика
 1. Fly is hurt by projectiles. If it's hurt, it's not moving well. The more it's hurt, the harder to control it.
-2. Vibrate differently on collisions, shooting, getting hit, taking off and landing (finetune on Windows)
 
 Еда
 1. Food represented by colored circles, with color depleting and only countours left. Every color has different effect on the fly.

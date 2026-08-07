@@ -38,6 +38,21 @@ var state: FlyState = FlyState.LANDED
 @export var leg_transition_duration: float = 0.3
 @export var turn_animation_speed: float = 1.0
 
+# ----- BUFFS -----
+@export var speed_boost_multiplier: float = 3.0   # e.g., 1.5 = 50% faster
+@export var speed_boost_duration: float = 25.0
+@export var shoot_boost_cooldown: float = 0.5    # reduced cooldown during buff
+@export var shoot_boost_duration: float = 5.0
+
+var speed_boost_active: bool = false
+var shoot_boost_active: bool = false
+var speed_boost_timer: float = 0.0
+var shoot_boost_timer: float = 0.0
+
+var original_forward_speed: float
+var original_walk_speed: float
+var original_shoot_cooldown: float
+
 var health: int
 var invincible: bool = false
 
@@ -68,7 +83,8 @@ func _ready() -> void:
 	$LandingDetector.collision_mask = 2
 
 	$HeadDetector.collision_layer = 1
-	$HeadDetector.collision_mask = 2
+	$HeadDetector.collision_mask = 6
+	$HeadDetector.add_to_group("head_detector")
 
 	if flying_sound:
 		flying_sound.stop()
@@ -80,6 +96,10 @@ func _ready() -> void:
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.visible = false
 	$FlyVisuals/Legs/WalkingLegs.stop()
+	
+	original_forward_speed = forward_speed
+	original_walk_speed = walk_speed
+	original_shoot_cooldown = shoot_cooldown
 
 	call_deferred("_set_initial_position")
 
@@ -186,19 +206,15 @@ func _physics_process(delta: float) -> void:
 			var target_scale = fly_visuals_base_scale * landing_scale_target
 			if $FlyVisuals/Body_Wings.visible:
 				$FlyVisuals.scale = $FlyVisuals.scale.move_toward(target_scale, landing_scale_speed * delta)
-			print("LANDING: scale = ", $FlyVisuals.scale)
 		FlyState.LANDED:
-			print("LANDED branch reached!")
 			if not $FlyVisuals/Sprite2D.visible:
 				$FlyVisuals/Sprite2D.visible = true
 				$FlyVisuals/Body_Wings.visible = false
 				$FlyVisuals/Body_Wings.stop()
-				print("Switched to Sprite2D, stopped Body_Wings")
 			$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 			is_fully_scaled = false
 			current_deformation = 0.0
 			facing_direction = 1
-			print("LANDED: scale reset to ", $FlyVisuals.scale, " is_fully_scaled=", is_fully_scaled)
 		FlyState.FLYING:
 			if not $FlyVisuals/Body_Wings.visible:
 				$FlyVisuals/Body_Wings.visible = true
@@ -224,7 +240,6 @@ func _physics_process(delta: float) -> void:
 
 	# ----- DEFORMATION (only in FLYING and fully scaled) -----
 	if state == FlyState.FLYING and is_fully_scaled:
-		print("DEFORMATION running in FLYING")
 		var current_speed = velocity.length()
 		var min_speed = 0.0
 		var max_speed = forward_speed + up_boost
@@ -238,6 +253,22 @@ func _physics_process(delta: float) -> void:
 			fly_visuals_base_scale.x * squash_factor * facing_direction,
 			fly_visuals_base_scale.y * stretch_factor
 		)
+	
+	# ----- BUFF TIMERS -----
+	if speed_boost_active:
+		speed_boost_timer -= delta
+		if speed_boost_timer <= 0:
+			speed_boost_active = false
+			forward_speed = original_forward_speed
+			walk_speed = original_walk_speed
+			print("Speed boost expired.")
+
+	if shoot_boost_active:
+		shoot_boost_timer -= delta
+		if shoot_boost_timer <= 0:
+			shoot_boost_active = false
+			shoot_cooldown = original_shoot_cooldown
+			print("Shoot boost expired.")
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
@@ -285,7 +316,7 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
 # ----- TAKEOFF STATE (forward only) -----
-func takeoff_update(delta: float) -> void:
+func takeoff_update(_delta: float) -> void:
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * takeoff_forward_speed
 	velocity += boundary_push
@@ -293,9 +324,9 @@ func takeoff_update(delta: float) -> void:
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
-	print("landed_update called")
 	var move_dir: Vector2
 	var viewport_size: Vector2
+	var should_walk: bool
 
 	if using_controller:
 		var target_rotation = input_vector.angle() + PI / 2
@@ -316,7 +347,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			facing_direction = 1 if input_vector.x >= 0 else -1
 		
 		# ----- LEG ANIMATION (controller) -----
-		var should_walk = (input_vector.length() > 0) and _is_head_on_platform()
+		should_walk = (input_vector.length() > 0) and _is_head_on_platform()
 		if should_walk:
 			if not $FlyVisuals/Legs/WalkingLegs.visible:
 				$FlyVisuals/Legs/NeutralLegs.visible = false
@@ -368,7 +399,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
 	# ----- LEG ANIMATION (keyboard) -----
-	var should_walk = (input_vector.length() > 0) and _is_head_on_platform()
+	should_walk = (input_vector.length() > 0) and _is_head_on_platform()
 	if should_walk:
 		if not $FlyVisuals/Legs/WalkingLegs.visible:
 			$FlyVisuals/Legs/NeutralLegs.visible = false
@@ -591,3 +622,17 @@ func respawn() -> void:
 	$FlyVisuals/Legs/WalkingLegs.stop()
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
 	print("Fly respawned (FLYING).")
+
+func apply_speed_boost() -> void:
+	speed_boost_active = true
+	speed_boost_timer = speed_boost_duration
+	forward_speed = original_forward_speed * speed_boost_multiplier
+	walk_speed = original_walk_speed * speed_boost_multiplier
+	print("Speed boost applied!")
+
+func apply_shoot_boost() -> void:
+	shoot_boost_active = true
+	shoot_boost_timer = shoot_boost_duration
+	shoot_cooldown = shoot_boost_cooldown
+	print("Shoot boost applied!")
+	
