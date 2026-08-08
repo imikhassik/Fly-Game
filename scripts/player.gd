@@ -39,10 +39,12 @@ var state: FlyState = FlyState.LANDED
 @export var turn_animation_speed: float = 1.0
 
 # ----- BUFFS -----
-@export var speed_boost_multiplier: float = 3.0   # e.g., 1.5 = 50% faster
+@export var speed_boost_multiplier: float = 2.0   # e.g., 1.5 = 50% faster
 @export var speed_boost_duration: float = 25.0
 @export var shoot_boost_cooldown: float = 0.5    # reduced cooldown during buff
 @export var shoot_boost_duration: float = 5.0
+
+@export var boost_deformation_multiplier: float = 1.5   # extra stretch/squash when speed boost is active
 
 var speed_boost_active: bool = false
 var shoot_boost_active: bool = false
@@ -246,8 +248,11 @@ func _physics_process(delta: float) -> void:
 		var target_deformation = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
 		current_deformation = move_toward(current_deformation, target_deformation, 2.0 * delta)
 
-		var stretch_factor = 1.0 + current_deformation * stretch_amount
-		var squash_factor = 1.0 - current_deformation * squash_amount
+		# Apply extra multiplier when boosted
+		var multiplier = boost_deformation_multiplier if speed_boost_active else 1.0
+
+		var stretch_factor = 1.0 + current_deformation * stretch_amount * multiplier
+		var squash_factor = 1.0 - current_deformation * squash_amount * multiplier
 
 		$FlyVisuals.scale = Vector2(
 			fly_visuals_base_scale.x * squash_factor * facing_direction,
@@ -442,7 +447,8 @@ func landing_update(delta: float) -> void:
 # ----- TRANSITION TRIGGERS -----
 func start_landing() -> void:
 	state = FlyState.LANDING
-	vertical_velocity = velocity.length()
+	var max_landing_speed = original_forward_speed * 1.2   # a little headroom
+	vertical_velocity = min(velocity.length(), max_landing_speed)
 	landed.emit()
 	_vibrate(1.0, 0.2)
 	if flying_sound and flying_sound.playing:
