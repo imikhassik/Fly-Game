@@ -107,6 +107,7 @@ func spawn_platform() -> void:
 	if food_scene and randf() < food_spawn_chance:
 		var food = food_scene.instantiate()
 		food.position = Vector2(0, -20)   # local offset relative to platform (optional)
+		food.buff_type = "shoot" if randf() < 0.5 else "speed"
 		new_platform.add_child(food)      # make it a child of the platform
 		print("Food spawned on platform at ", new_platform.position + food.position)
 

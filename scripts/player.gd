@@ -41,8 +41,8 @@ var state: FlyState = FlyState.LANDED
 # ----- BUFFS -----
 @export var speed_boost_multiplier: float = 2.0   # e.g., 1.5 = 50% faster
 @export var speed_boost_duration: float = 25.0
-@export var shoot_boost_cooldown: float = 0.5    # reduced cooldown during buff
-@export var shoot_boost_duration: float = 5.0
+@export var shoot_boost_cooldown: float = 0.1    # reduced cooldown during buff
+@export var shoot_boost_duration: float = 25.0
 
 @export var boost_deformation_multiplier: float = 1.5   # extra stretch/squash when speed boost is active
 
