@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://7h5mmjjgn5c8" path="res://scenes/platform.tscn" id="2_paw1w"]
 [ext_resource type="Script" uid="uid://de30uwe0kujr0" path="res://scripts/platform_manager.gd" id="3_j6w7d"]
 [ext_resource type="PackedScene" uid="uid://bc4jhx7vo8cvk" path="res://scenes/enemy_spawner.tscn" id="4_x4b8f"]
+[ext_resource type="FontFile" uid="uid://xhggxobabo8q" path="res://assets/fonts/Numbs-Regular.ttf" id="6_qcd3b"]
 
 [node name="Node2D" type="Control" unique_id=804871185]
 layout_mode = 3
@@ -26,11 +27,28 @@ grow_vertical = 2
 [node name="Platform" parent="." unique_id=1887111216 instance=ExtResource("2_paw1w")]
 force_variant = 1
 
-[node name="Fly" parent="." unique_id=1584304132 instance=ExtResource("1_2venv")]
+[node name="Fly" parent="." unique_id=1584304132 node_paths=PackedStringArray("buff_label") instance=ExtResource("1_2venv")]
 z_index = 1
+buff_label = NodePath("../CanvasLayer/BuffLabel")
 
 [node name="PlatformManager" type="Node" parent="." unique_id=1790871871]
 script = ExtResource("3_j6w7d")
 starting_platform_path = NodePath("../Platform")
 
 [node name="EnemySpawner" parent="." unique_id=81393025 instance=ExtResource("4_x4b8f")]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1210715482]
+layer = 10
+
+[node name="BuffLabel" type="Label" parent="CanvasLayer" unique_id=1339001576]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -800.0
+offset_top = 20.0
+offset_right = -650.0
+offset_bottom = 80.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("6_qcd3b")
+theme_override_font_sizes/font_size = 64

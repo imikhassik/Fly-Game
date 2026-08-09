@@ -41,10 +41,12 @@ var state: FlyState = FlyState.LANDED
 # ----- BUFFS -----
 @export var speed_boost_multiplier: float = 2.0   # e.g., 1.5 = 50% faster
 @export var speed_boost_duration: float = 25.0
-@export var shoot_boost_cooldown: float = 0.1    # reduced cooldown during buff
+@export var shoot_boost_cooldown: float = 0.2    # reduced cooldown during buff
 @export var shoot_boost_duration: float = 25.0
 
 @export var boost_deformation_multiplier: float = 1.5   # extra stretch/squash when speed boost is active
+
+@export var buff_label: Label = null
 
 var speed_boost_active: bool = false
 var shoot_boost_active: bool = false
@@ -69,6 +71,11 @@ var is_fully_scaled: bool = false
 var facing_direction: int = 1
 
 func _ready() -> void:
+	if buff_label:
+		var viewport_size = get_viewport().get_visible_rect().size
+		buff_label.position = Vector2(viewport_size.x - buff_label.size.x - 50, 50)
+		buff_label.visible = false
+	
 	fly_visuals_base_scale = $FlyVisuals.scale
 	print("FlyVisuals base scale: ", fly_visuals_base_scale)
 	
@@ -260,8 +267,13 @@ func _physics_process(delta: float) -> void:
 		)
 	
 	# ----- BUFF TIMERS -----
+	var any_buff_active = false
+	var label_text = ""
+
 	if speed_boost_active:
 		speed_boost_timer -= delta
+		any_buff_active = true
+		label_text += "%.0f\n" % speed_boost_timer
 		if speed_boost_timer <= 0:
 			speed_boost_active = false
 			forward_speed = original_forward_speed
@@ -270,10 +282,19 @@ func _physics_process(delta: float) -> void:
 
 	if shoot_boost_active:
 		shoot_boost_timer -= delta
+		any_buff_active = true
+		label_text += "%.0f" % shoot_boost_timer
 		if shoot_boost_timer <= 0:
 			shoot_boost_active = false
 			shoot_cooldown = original_shoot_cooldown
 			print("Shoot boost expired.")
+
+	if buff_label:
+		if any_buff_active:
+			buff_label.text = label_text
+			buff_label.visible = true
+		else:
+			buff_label.visible = false
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
