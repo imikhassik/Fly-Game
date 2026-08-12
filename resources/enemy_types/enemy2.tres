@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="EnemyType" format=3 uid="uid://dx3hs1w54v4kk"]
 
 [ext_resource type="Script" uid="uid://y7r0wy80qvtc" path="res://scripts/enemy_type.gd" id="1_roont"]
-[ext_resource type="Texture2D" uid="uid://cjfnol4jsen6d" path="res://assets/enemies/enemy2.PNG" id="2_rqep2"]
+[ext_resource type="SpriteFrames" uid="uid://cqordskpb41v7" path="res://resources/enemy_types/enemy2_frames.tres" id="2_rqep2"]
 
 [resource]
 script = ExtResource("1_roont")
-texture = ExtResource("2_rqep2")
+sprite_frames = ExtResource("2_rqep2")
 health = 2
 shoot_interval_min = 1.0
 shoot_interval_max = 2.5

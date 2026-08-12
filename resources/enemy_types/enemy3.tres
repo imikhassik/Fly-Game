@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="EnemyType" format=3 uid="uid://dddmrydkqorhn"]
 
 [ext_resource type="Script" uid="uid://y7r0wy80qvtc" path="res://scripts/enemy_type.gd" id="1_as8rx"]
-[ext_resource type="Texture2D" uid="uid://bvop7oykijfye" path="res://assets/enemies/enemy3.PNG" id="2_0iu8i"]
+[ext_resource type="SpriteFrames" uid="uid://fcwsxfv8n5j3" path="res://resources/enemy_types/enemy3_frames.tres" id="2_0iu8i"]
 
 [resource]
 script = ExtResource("1_as8rx")
-texture = ExtResource("2_0iu8i")
+sprite_frames = ExtResource("2_0iu8i")
 speed = 40.0
 health = 3
 shoot_interval_min = 2.0

@@ -1,0 +1,26 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://d112ifk7pfoen"]
+
+[ext_resource type="Texture2D" uid="uid://37qq4pbpq6qh" path="res://assets/enemies/enemy4/frame1.PNG" id="1_yinj1"]
+[ext_resource type="Texture2D" uid="uid://bmx17s2x1rwbh" path="res://assets/enemies/enemy4/frame2.PNG" id="2_7ty2q"]
+[ext_resource type="Texture2D" uid="uid://dcmopm46h3r7h" path="res://assets/enemies/enemy4/frame3.PNG" id="3_t12a5"]
+[ext_resource type="Texture2D" uid="uid://b2gxwycigck26" path="res://assets/enemies/enemy4/frame4.PNG" id="4_7fuhe"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_yinj1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_7ty2q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_t12a5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_7fuhe")
+}],
+"loop": 1,
+"name": &"fly",
+"speed": 20.0
+}]

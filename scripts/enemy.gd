@@ -27,7 +27,8 @@ func _ready() -> void:
 	
 	if enemy_types.size() > 0:
 		var chosen_type = enemy_types[randi() % enemy_types.size()]
-		$Sprite2D.texture = chosen_type.texture
+		$AnimatedSprite2D.sprite_frames = chosen_type.sprite_frames
+		$AnimatedSprite2D.play("fly")
 		speed = chosen_type.speed
 		health = chosen_type.health
 		shoot_interval_min = chosen_type.shoot_interval_min
@@ -68,6 +69,18 @@ func _physics_process(delta: float) -> void:
 	else:
 		_start_retreat()
 		_apply_retreat()
+		
+	# ----- WING ANIMATION SPEED (absolute speed) -----
+	if $AnimatedSprite2D.sprite_frames:
+		var current_speed = velocity.length()
+		var reference_speed = 60.0   # baseline speed for "normal" flap rate
+		
+		if current_speed > 0:
+			var ratio = current_speed / reference_speed
+			var speed_scale = clamp(ratio, 0.3, 2.0)
+			$AnimatedSprite2D.speed_scale = speed_scale
+		else:
+			$AnimatedSprite2D.speed_scale = 0.3
 
 # ----- COLLISION HELPERS -----
 func _enable_collision_with_fly() -> void:
@@ -154,9 +167,9 @@ func take_damage() -> void:
 		return
 	is_flashing = true
 	
-	$Sprite2D.modulate = Color.RED
+	$AnimatedSprite2D.modulate = Color.RED
 	await get_tree().create_timer(damage_flash_duration).timeout
-	$Sprite2D.modulate = Color.WHITE
+	$AnimatedSprite2D.modulate = Color.WHITE
 	is_flashing = false
 	
 	health -= 1
