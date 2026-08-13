@@ -12,16 +12,21 @@ var is_draining: bool = false
 var is_consumed: bool = false
 var initial_scale: Vector2 = Vector2.ONE   # <-- Store initial scale
 
+@onready var fill_sprite = $Fill
+@onready var border_sprite = $Border
+
 func _ready() -> void:
 	# Store the starting scale (as set in the scene)
-	initial_scale = $Sprite2D.scale
+	initial_scale = fill_sprite.scale
 	print("Food initial scale: ", initial_scale)
 	
 	# Set color based on buff type
 	if buff_type == "speed":
-		$Sprite2D.modulate = color_speed
+		fill_sprite.modulate = color_speed
 	else:
-		$Sprite2D.modulate = color_shoot
+		fill_sprite.modulate = color_shoot
+	
+	border_sprite.modulate = Color.BLACK
 	
 	# Put food on Layer 3 so HeadDetector can detect it
 	collision_layer = 4
@@ -44,7 +49,7 @@ func _process(delta: float) -> void:
 			
 			# Shrink the circle from the outside in
 			var new_scale = 1.0 - drain_progress
-			$Sprite2D.scale = initial_scale * new_scale   # <-- Scale from initial size
+			fill_sprite.scale = initial_scale * new_scale   # <-- Scale from initial size
 			
 			if drain_progress >= 1.0:
 				_apply_buff()
@@ -53,13 +58,14 @@ func _process(delta: float) -> void:
 			# If the button is released, reset progress
 			is_draining = false
 			drain_progress = 0.0
-			$Sprite2D.scale = initial_scale   # <-- Reset to initial size
+			border_sprite.scale = initial_scale   # <-- Reset to initial size
+			fill_sprite.scale = initial_scale
 	else:
 		# If the head leaves, reset progress
-		if is_draining or drain_progress > 0:
-			is_draining = false
-			drain_progress = 0.0
-			$Sprite2D.scale = initial_scale   # <-- Reset to initial size
+		if is_draining:
+			drain_progress += delta / drain_time
+			var new_scale = 1.0 - drain_progress
+			fill_sprite.scale = initial_scale * new_scale   # only fill shrinks
 
 func _apply_buff() -> void:
 	is_consumed = true
@@ -69,4 +75,5 @@ func _apply_buff() -> void:
 			player.apply_speed_boost()
 		else:
 			player.apply_shoot_boost()
-	queue_free()
+			
+	fill_sprite.visible = false

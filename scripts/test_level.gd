@@ -18,7 +18,7 @@ func _ready() -> void:
 	# Then maximize (OS will handle it from the centered position)
 	window.mode = Window.MODE_MAXIMIZED
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if not enemy_buzz:
 		return
 	
