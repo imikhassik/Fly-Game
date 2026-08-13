@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://de30uwe0kujr0" path="res://scripts/platform_manager.gd" id="3_j6w7d"]
 [ext_resource type="PackedScene" uid="uid://bc4jhx7vo8cvk" path="res://scenes/enemy_spawner.tscn" id="4_x4b8f"]
 [ext_resource type="FontFile" uid="uid://xhggxobabo8q" path="res://assets/fonts/Numbs-Regular.ttf" id="6_qcd3b"]
+[ext_resource type="AudioStream" uid="uid://bdrbq4p24vd5w" path="res://assets/audio/enemy-flying.wav" id="7_88ety"]
 
 [node name="Node2D" type="Control" unique_id=804871185]
 layout_mode = 3
@@ -52,3 +53,7 @@ grow_horizontal = 0
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("6_qcd3b")
 theme_override_font_sizes/font_size = 64
+
+[node name="EnemyBuzz" type="AudioStreamPlayer2D" parent="." unique_id=2047817458]
+stream = ExtResource("7_88ety")
+volume_db = 10.0
