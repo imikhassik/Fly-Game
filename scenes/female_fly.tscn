@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://bytc234uchn5k"]
+
+[ext_resource type="Texture2D" uid="uid://bwew6hxpdw3kg" path="res://assets/fly/female_fly.PNG" id="1_i2jxt"]
+
+[node name="FemaleFly" type="Node2D" unique_id=2006781394]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1691295116]
+scale = Vector2(0.06, 0.06)
+texture = ExtResource("1_i2jxt")

@@ -11,7 +11,8 @@ extends Node
 @export var scale_speed: float = 0.5
 
 @export var food_scene: PackedScene = preload("res://scenes/food.tscn")
-@export var food_spawn_chance: float = 1.0   # 30% chance per platform
+@export var female_fly_scene: PackedScene = preload("res://scenes/female_fly.tscn")
+@export var female_fly_spawn_chance: float = 0.3   # 30% chance to spawn female fly
 
 var spawn_interval: float = 20.0
 var spawn_timer: float = 0.0
@@ -103,13 +104,23 @@ func spawn_platform() -> void:
 	
 	print("Platform spawned at: ", new_platform.position)
 	
-	# Spawn food on this platform
-	if food_scene and randf() < food_spawn_chance:
-		var food = food_scene.instantiate()
-		food.position = Vector2(0, -20)   # local offset relative to platform (optional)
-		food.buff_type = "shoot" if randf() < 0.5 else "speed"
-		new_platform.add_child(food)      # make it a child of the platform
-		print("Food spawned on platform at ", new_platform.position + food.position)
+	# Always spawn either food or female fly on every platform
+	if food_scene and female_fly_scene:
+		var spawn_choice = randf()
+		
+		if spawn_choice < female_fly_spawn_chance:
+			# Spawn female fly
+			var female = female_fly_scene.instantiate()
+			female.position = Vector2(0, -20)
+			new_platform.add_child(female)
+			print("Female fly spawned on platform at ", new_platform.position)
+		else:
+			# Spawn food
+			var food = food_scene.instantiate()
+			food.position = Vector2(0, -20)
+			food.buff_type = "shoot" if randf() < 0.5 else "speed"
+			new_platform.add_child(food)
+			print("Food spawned on platform at ", new_platform.position + food.position)
 
 func _on_fly_landed() -> void:
 	print("_on_fly_landed() called - pausing movement, scaling to 100%")
