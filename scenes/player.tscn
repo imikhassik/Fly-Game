@@ -27,6 +27,8 @@ size = Vector2(21, 53)
 [sub_resource type="CircleShape2D" id="CircleShape2D_ejr3x"]
 radius = 5.0
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_1fr2o"]
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_1fr2o"]
 animations = [{
 "frames": [{
@@ -98,6 +100,15 @@ collision_mask = 2
 position = Vector2(0, -35)
 shape = SubResource("CircleShape2D_ejr3x")
 debug_color = Color(0.7477854, 0.2613674, 0.93557024, 0.41960785)
+
+[node name="RearDetector" type="Area2D" parent="." unique_id=1246930652]
+collision_layer = 128
+collision_mask = 128
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RearDetector" unique_id=1190450521]
+position = Vector2(0, 20)
+shape = SubResource("CircleShape2D_1fr2o")
+debug_color = Color(0.92628783, 0, 0.30193684, 0.41960785)
 
 [node name="ShootSound" type="AudioStreamPlayer2D" parent="." unique_id=72791274]
 stream = ExtResource("3_qhqgy")

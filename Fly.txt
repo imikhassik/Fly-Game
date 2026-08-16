@@ -8,20 +8,26 @@ Initial stats and improvements
 Fly Game ideas
 
 Goal of the game
-The goal is to make as many babies as possible during the fly lifetime. The points are the count of babies the family line has made so far. 
-To make babies a fly lands on a platform with a female fly and impgregnates her. It takes time for her to give birth. The birth is celebrated and the counter increases by the amount of babies that were made. The mom sends you a picture of one of her offspring (they are all the same), which is going to inherit some positive traits you have developed so far and some negative traits possibly inherited from the mother. The appearance also is some of your traits and some of mothers traits. This is a descendant candidate. You will have as many of them as many females were impregnated, and you will choose your main descendant before you die to continue the family line and increasing of the counter.
-If the fly is killed before it dies of old age, it won't be able to select the descendant and the family will die.
+The goal is to make as many babies as possible during the fly lifetime with increasingly better stats. The points are the count of babies the family line has made so far. 
+To make babies a fly lands on a platform with a female fly and impgregnates her. It takes time for her to give birth and maybe not all of them will give birth. The birth is celebrated and the counter increases by the amount of babies that were made. The mom sends you a picture of one of her offspring (they are all the same), which is going to inherit some positive traits you have developed so far and some negative traits possibly inherited from the mother. The appearance also is some of your traits and some of mothers traits. This is a descendant candidate.
+ 
+When the main fly dies, the best of its offspring will continue the family line and increasing of the counter. 
+If the fly is killed before it has made any babies, the family will die.
+The life of one fly is 30 minutes. Its states are improving gradually and it makes better and better babies.
+
 The game can go on forever and the users will have a leaderboard with current fly they have and the number of descendants along with the linear history of the family (fly pictures and how many babies each couple made). The flies will start out all the same but will end up pretty unique in stats and appearance. Possibly we'll have a server to pvp the flies.
 The descendant flies can be named, but every one starts out with the first fly named Вова (Boba).
 Sometime the platform will contain a male fly and if my fly tries to mate with it, it will get hurt. Some female flies will not want to mate, so my fly can give it something, like portion of what they ate (feed it from mouth), but it's not guaranteed that she doesn't fly away or hurt him.
+
 
 Физика
 1. Fly is hurt by projectiles. If it's hurt, it's not moving well. The more it's hurt, the harder to control it.
 
 Еда
 1. Food should have effect on fly. Like consuming cold (blue) food makes it cough mid flight, beans make it fart mid flight, etc.
-2. Муха становится тяжелой, когда поест, и все легче со временем. То есть уворачиваться от врагов легче, но есть шанс упасть в голодный обморок.
-3. Нужен индикатор полноты мухиного живота
+2. Some food needs to add life
+3. Муха становится тяжелой, когда поест, и все легче со временем. То есть уворачиваться от врагов легче, но есть шанс упасть в голодный обморок.
+4. Нужен индикатор полноты мухиного живота
 
 Ловушки:
 1. If you linger on a platform, you'll be squished by мухобойка
@@ -34,7 +40,7 @@ What will make the game fun to play?
 2. The dynamics of landing and taking off -- there needs to be rumbling impact. Like a jet taking off and landing, like landing and take off in No Man's Sky. Maybe make landing a breaking off motorcycle sounds, like the engine is failing. Taking off a revving jet sound. Flying sometimes gets interrupted by failing engine sounds and uncotrollableness because of fly being hungry
 3. The graphics of wings and legs, the sounds of flying and walking. 
 4. The graphics and sound of consuming food
-5. The fly will eventually have initial stats, which can be improved from food buffs and maybe the amount of enemies killed, the amount of food eaten, the amount of females impregnated. The food buffs should leave trace amounts of improvement after each time the fly eats one. Like 5% or so added permanently to fly stats.
+5. The fly will have initial stats, which can be improved from food buffs and maybe the amount of enemies killed, the amount of food eaten, the amount of females impregnated. The food buffs should leave trace amounts of improvement after each time the fly eats one. Like 5% or so added permanently to fly stats.
 
 I need to focus on every aspect of fly control satisfaction. I want to make just controlling the fly so satisfying, everything else becomes irrelevant. Even the goal of the game.
 This means i need to focus on animation and sounds for the fly to start with.

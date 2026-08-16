@@ -70,6 +70,11 @@ var current_deformation: float = 0.0
 var is_fully_scaled: bool = false
 var facing_direction: int = 1
 
+var is_mating: bool = false
+var mating_timer: float = 0.0
+var mating_duration: float = 3.0
+var female_partner: Node = null
+
 func _ready() -> void:
 	if buff_label:
 		var viewport_size = get_viewport().get_visible_rect().size
@@ -111,6 +116,9 @@ func _ready() -> void:
 	original_shoot_cooldown = shoot_cooldown
 
 	call_deferred("_set_initial_position")
+	
+	$RearDetector.area_entered.connect(_on_rear_detector_area_entered)
+	$RearDetector.area_exited.connect(_on_rear_detector_area_exited)
 
 func _set_initial_position() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
@@ -144,6 +152,7 @@ func _physics_process(delta: float) -> void:
 	if using_controller:
 		input_vector = controller_vector
 
+	# Boundary push (unchanged)
 	var screen_size = get_viewport().get_visible_rect().size
 	var push := Vector2.ZERO
 	var margin = boundary_margin
@@ -165,6 +174,7 @@ func _physics_process(delta: float) -> void:
 
 	boundary_push = push
 
+	# Shoot cooldown
 	if shoot_timer > 0:
 		shoot_timer -= delta
 
@@ -172,6 +182,7 @@ func _physics_process(delta: float) -> void:
 		shoot()
 		shoot_timer = shoot_cooldown
 
+	# Land / Take off
 	if Input.is_action_just_pressed("land"):
 		match state:
 			FlyState.FLYING:
@@ -184,6 +195,13 @@ func _physics_process(delta: float) -> void:
 			_:
 				pass
 
+	# ----- MATING INPUT -----
+	if Input.is_action_just_pressed("interact"):
+		if state == FlyState.LANDED and not is_mating:
+			if female_partner and female_partner.has_method("start_mating"):
+				start_mating()
+
+	# State updates
 	match state:
 		FlyState.FLYING:
 			flying_update(input_vector, delta, using_controller, raw_stick)
@@ -216,10 +234,18 @@ func _physics_process(delta: float) -> void:
 			if $FlyVisuals/Body_Wings.visible:
 				$FlyVisuals.scale = $FlyVisuals.scale.move_toward(target_scale, landing_scale_speed * delta)
 		FlyState.LANDED:
-			if not $FlyVisuals/Sprite2D.visible:
-				$FlyVisuals/Sprite2D.visible = true
-				$FlyVisuals/Body_Wings.visible = false
-				$FlyVisuals/Body_Wings.stop()
+			if not is_mating:
+				if not $FlyVisuals/Sprite2D.visible:
+					$FlyVisuals/Sprite2D.visible = true
+					$FlyVisuals/Body_Wings.visible = false
+					$FlyVisuals/Body_Wings.stop()
+			else:
+				# Keep wings flapping during mating
+				$FlyVisuals/Sprite2D.visible = false
+				if not $FlyVisuals/Body_Wings.visible:
+					$FlyVisuals/Body_Wings.visible = true
+					$FlyVisuals/Body_Wings.play("flying")
+			
 			$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 			is_fully_scaled = false
 			current_deformation = 0.0
@@ -295,6 +321,11 @@ func _physics_process(delta: float) -> void:
 			buff_label.visible = true
 		else:
 			buff_label.visible = false
+			
+	if is_mating:
+		mating_timer -= delta
+		if mating_timer <= 0:
+			finish_mating()
 
 # ----- FLYING STATE -----
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
@@ -350,6 +381,11 @@ func takeoff_update(_delta: float) -> void:
 
 # ----- LANDED (WALKING) STATE -----
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
+	if is_mating:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+		
 	var move_dir: Vector2
 	var viewport_size: Vector2
 	var should_walk: bool
@@ -662,4 +698,62 @@ func apply_shoot_boost() -> void:
 	shoot_boost_timer = shoot_boost_duration
 	shoot_cooldown = shoot_boost_cooldown
 	print("Shoot boost applied!")
+	
+func _on_rear_detector_area_entered(area: Area2D) -> void:
+	var parent = area.get_parent()
+	if parent.is_in_group("female_fly"):
+		female_partner = parent
+
+func _on_rear_detector_area_exited(area: Area2D) -> void:
+	if area.get_parent() == female_partner:
+		female_partner = null
+		
+func start_mating() -> void:
+	if not female_partner or is_mating:
+		return
+
+	is_mating = true
+	mating_timer = mating_duration
+
+	# Lock controls
+	state = FlyState.LANDED
+	velocity = Vector2.ZERO
+
+	# Force wings flapping
+	$FlyVisuals/Sprite2D.visible = false
+	$FlyVisuals/Body_Wings.visible = true
+	$FlyVisuals/Body_Wings.play("flying")
+
+	# Tell female to start
+	if female_partner.has_method("start_mating"):
+		female_partner.start_mating()
+
+	# Start vibration
+	_start_mating_vibration()
+
+	print("Mating started!")
+
+func _start_mating_vibration() -> void:
+	var pulse_interval = 1.0 / 3.0   # 3 pulses per second
+	var total_pulses = mating_duration / pulse_interval
+
+	for i in range(int(total_pulses)):
+		if not is_mating:
+			break
+		_vibrate(0.08, 0.5)
+		await get_tree().create_timer(pulse_interval).timeout
+
+	# Always play final vibration when done
+	_vibrate(0.3, 0.7)
+
+func finish_mating() -> void:
+	is_mating = false
+	female_partner = null
+
+	# Stop wing flapping (go back to normal landed state)
+	$FlyVisuals/Sprite2D.visible = true
+	$FlyVisuals/Body_Wings.visible = false
+	$FlyVisuals/Body_Wings.stop()
+
+	print("Mating finished!")
 	

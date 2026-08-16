@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwew6hxpdw3kg"
-path="res://.godot/imported/female_fly.PNG-8b8fbc224d0e34bead0c5db4c2ef71ad.ctex"
+uid="uid://gchbu48fy4ml"
+path="res://.godot/imported/neutral.PNG-f25385bcbf23f7c35066e60513cdc841.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/fly/female_fly.PNG"
-dest_files=["res://.godot/imported/female_fly.PNG-8b8fbc224d0e34bead0c5db4c2ef71ad.ctex"]
+source_file="res://assets/female_fly/neutral.PNG"
+dest_files=["res://.godot/imported/neutral.PNG-f25385bcbf23f7c35066e60513cdc841.ctex"]
 
 [params]
 
