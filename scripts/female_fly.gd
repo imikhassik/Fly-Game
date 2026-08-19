@@ -8,11 +8,13 @@ var mating_duration: float = 3.0
 
 @onready var idle_sprite = $Sprite2D
 @onready var animated_sprite = $AnimatedSprite2D
+@onready var wings = $Wings
 
 func _ready() -> void:
 	add_to_group("female_fly")
 	idle_sprite.visible = true
 	animated_sprite.visible = false
+	wings.visible = false
 
 func start_mating() -> void:
 	if is_mating:
@@ -24,6 +26,9 @@ func start_mating() -> void:
 	idle_sprite.visible = false
 	animated_sprite.visible = true
 	animated_sprite.play("mating")
+	wings.visible = true
+	wings.play("flapping")
+	
 
 	print("Female: mating started!")
 
@@ -39,6 +44,8 @@ func _process(delta: float) -> void:
 		var last_frame = animated_sprite.sprite_frames.get_frame_count("mating") - 1
 		animated_sprite.frame = last_frame
 		animated_sprite.pause()   # or stop() – pause is safer
+		wings.frame = 2
+		wings.pause()
 
 		mating_finished.emit()
 		print("Female: mating finished! (frame: ", animated_sprite.frame, ")")

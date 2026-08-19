@@ -2,7 +2,7 @@ Focus:
 Impregnation
 
 Next focus:
-Initial stats and improvements
+hearts, lives from food, pause
 
 
 Fly Game ideas

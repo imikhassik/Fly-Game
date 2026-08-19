@@ -5,6 +5,12 @@
 [ext_resource type="Texture2D" uid="uid://bavletkenqpk2" path="res://assets/female_fly/mating_animation/frame1.PNG" id="2_j80ly"]
 [ext_resource type="Texture2D" uid="uid://cspicj5ichf0f" path="res://assets/female_fly/mating_animation/frame2.PNG" id="3_5p5i4"]
 [ext_resource type="Texture2D" uid="uid://bwcsgybg403oj" path="res://assets/female_fly/mating_animation/frame3.PNG" id="4_l531t"]
+[ext_resource type="Texture2D" uid="uid://cgkk5yflqv0cq" path="res://assets/female_fly/wing_animation/frame1.PNG" id="6_m5cqp"]
+[ext_resource type="Texture2D" uid="uid://ccn2bqpuou4aa" path="res://assets/female_fly/wing_animation/frame2.PNG" id="7_mo1qt"]
+[ext_resource type="Texture2D" uid="uid://cwbjdxedvrkjp" path="res://assets/female_fly/wing_animation/frame3.PNG" id="8_vkgy0"]
+[ext_resource type="Texture2D" uid="uid://8m8xr5yirhdd" path="res://assets/female_fly/wing_animation/frame4.PNG" id="9_lxqir"]
+[ext_resource type="Texture2D" uid="uid://ckhdo4oykvy5h" path="res://assets/female_fly/wing_animation/frame5.PNG" id="10_46qkk"]
+[ext_resource type="Texture2D" uid="uid://cwhkktar7ers2" path="res://assets/female_fly/wing_animation/frame6.PNG" id="11_b2gop"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_1fr2o"]
 animations = [{
@@ -24,6 +30,32 @@ animations = [{
 }]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1fr2o"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_7jope"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_m5cqp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_mo1qt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_vkgy0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_lxqir")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_46qkk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_b2gop")
+}],
+"loop": 1,
+"name": &"flapping",
+"speed": 12.0
+}]
 
 [node name="FemaleFly" type="Node2D" unique_id=2006781394]
 script = ExtResource("1_j80ly")
@@ -45,3 +77,8 @@ collision_mask = 128
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RearDetector" unique_id=1657061365]
 position = Vector2(0, 20)
 shape = SubResource("CircleShape2D_1fr2o")
+
+[node name="Wings" type="AnimatedSprite2D" parent="." unique_id=257931663]
+scale = Vector2(0.1, 0.1)
+sprite_frames = SubResource("SpriteFrames_7jope")
+animation = &"flapping"
