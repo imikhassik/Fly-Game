@@ -5,16 +5,24 @@ signal mating_finished
 var is_mating: bool = false
 var mating_timer: float = 0.0
 var mating_duration: float = 3.0
+var player: Node = null
 
 @onready var idle_sprite = $Sprite2D
 @onready var animated_sprite = $AnimatedSprite2D
 @onready var wings = $Wings
+@onready var body_collision = $BodyCollision/CollisionPolygon2D
 
 func _ready() -> void:
 	add_to_group("female_fly")
 	idle_sprite.visible = true
 	animated_sprite.visible = false
 	wings.visible = false
+
+	# Set collision layer and mask
+	$BodyCollision.collision_layer = 4
+	$BodyCollision.collision_mask = 1
+
+	player = get_tree().get_first_node_in_group("player")
 
 func start_mating() -> void:
 	if is_mating:
@@ -28,11 +36,17 @@ func start_mating() -> void:
 	animated_sprite.play("mating")
 	wings.visible = true
 	wings.play("flapping")
-	
 
 	print("Female: mating started!")
 
 func _process(delta: float) -> void:
+	# Toggle collision based on player state
+	if not player:
+		player = get_tree().get_first_node_in_group("player")
+	else:
+		# Only enable collision when player is LANDED
+		body_collision.disabled = (player.state != player.FlyState.LANDED)
+
 	if not is_mating:
 		return
 
@@ -40,10 +54,9 @@ func _process(delta: float) -> void:
 	if mating_timer <= 0:
 		is_mating = false
 
-		# Set to the last frame of the animation
 		var last_frame = animated_sprite.sprite_frames.get_frame_count("mating") - 1
 		animated_sprite.frame = last_frame
-		animated_sprite.pause()   # or stop() – pause is safer
+		animated_sprite.pause()
 		wings.frame = 2
 		wings.pause()
 

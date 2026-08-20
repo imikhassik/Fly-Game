@@ -91,7 +91,7 @@ func _ready() -> void:
 	health = max_health
 
 	collision_layer = 1
-	collision_mask = 3
+	collision_mask = 7
 
 	$LandingDetector.collision_layer = 1
 	$LandingDetector.collision_mask = 2
@@ -119,7 +119,7 @@ func _ready() -> void:
 	
 	$RearDetector.area_entered.connect(_on_rear_detector_area_entered)
 	$RearDetector.area_exited.connect(_on_rear_detector_area_exited)
-
+	
 func _set_initial_position() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
 	var bottom_offset = 150
@@ -401,6 +401,7 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			velocity = Vector2.ZERO
 		velocity += boundary_push
 		move_and_slide()
+			
 		viewport_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)

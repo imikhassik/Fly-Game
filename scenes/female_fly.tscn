@@ -82,3 +82,11 @@ shape = SubResource("CircleShape2D_1fr2o")
 scale = Vector2(0.1, 0.1)
 sprite_frames = SubResource("SpriteFrames_7jope")
 animation = &"flapping"
+
+[node name="BodyCollision" type="StaticBody2D" parent="." unique_id=1441567245]
+disable_mode = 1
+collision_layer = 8
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="BodyCollision" unique_id=49720783]
+position = Vector2(-1, -31)
+polygon = PackedVector2Array(-1, -6, 14, 2, 21, 47, 11, 9, -1, 4, -11, 9, -19, 46, -14, 3)
