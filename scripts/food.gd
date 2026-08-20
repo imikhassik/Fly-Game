@@ -4,7 +4,8 @@ extends Area2D
 @export var buff_type: String = "speed"   # "speed" or "shoot"
 @export var drain_time: float = 1.5       # seconds to fully drain
 @export var color_speed: Color = Color.GREEN
-@export var color_shoot: Color = Color.RED
+@export var color_shoot: Color = Color.BLUE
+@export var color_heart: Color = Color.RED
 
 # ----- INTERNAL STATE -----
 var drain_progress: float = 0.0
@@ -23,8 +24,10 @@ func _ready() -> void:
 	# Set color based on buff type
 	if buff_type == "speed":
 		fill_sprite.modulate = color_speed
-	else:
+	elif buff_type == "shoot":
 		fill_sprite.modulate = color_shoot
+	elif buff_type == "heart":
+		fill_sprite.modulate = color_heart
 	
 	border_sprite.modulate = Color.BLACK
 	
@@ -71,9 +74,11 @@ func _apply_buff() -> void:
 	is_consumed = true
 	var player = get_tree().get_first_node_in_group("player")
 	if player:
-		if buff_type == "speed":
-			player.apply_speed_boost()
-		else:
-			player.apply_shoot_boost()
-			
+		match buff_type:
+			"speed":
+				player.apply_speed_boost()
+			"shoot":
+				player.apply_shoot_boost()
+			"heart":
+				player.apply_heart_boost()
 	fill_sprite.visible = false

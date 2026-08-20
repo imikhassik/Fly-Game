@@ -47,6 +47,8 @@ var state: FlyState = FlyState.LANDED
 @export var boost_deformation_multiplier: float = 1.5   # extra stretch/squash when speed boost is active
 
 @export var buff_label: Label = null
+@export var hearts_container: HBoxContainer = null
+@export var max_heart_capacity: int = 6
 
 var speed_boost_active: bool = false
 var shoot_boost_active: bool = false
@@ -58,7 +60,11 @@ var original_walk_speed: float
 var original_shoot_cooldown: float
 
 var health: int
+var initial_max_health: int
+var initial_max_heart_capacity: int
 var invincible: bool = false
+var heart_full: Texture = preload("res://assets/fly/lives/heart_full.PNG")
+var heart_broken: Texture = preload("res://assets/fly/lives/heart_broken.PNG")
 
 var fly_visuals_base_scale: Vector2 = Vector2.ONE
 var vertical_velocity: float = 0.0
@@ -87,7 +93,9 @@ func _ready() -> void:
 	$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 	z_index = 1
 	add_to_group("player")
-
+	
+	initial_max_health = max_health
+	initial_max_heart_capacity = max_heart_capacity
 	health = max_health
 
 	collision_layer = 1
@@ -119,6 +127,8 @@ func _ready() -> void:
 	
 	$RearDetector.area_entered.connect(_on_rear_detector_area_entered)
 	$RearDetector.area_exited.connect(_on_rear_detector_area_exited)
+	
+	update_hearts()
 	
 func _set_initial_position() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
@@ -653,6 +663,9 @@ func take_damage() -> void:
 	_vibrate(0.5, 0.3)
 	health -= 1
 	print("Fly took damage! Health: ", health)
+	
+	update_hearts()
+	
 	if health <= 0:
 		respawn()
 	else:
@@ -667,6 +680,8 @@ func _start_invincibility() -> void:
 
 func respawn() -> void:
 	global_position = respawn_position
+	max_health = initial_max_health
+	max_heart_capacity = initial_max_heart_capacity
 	health = max_health
 	velocity = Vector2.ZERO
 	state = FlyState.FLYING
@@ -685,6 +700,9 @@ func respawn() -> void:
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/WalkingLegs.stop()
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
+	
+	update_hearts()
+	
 	print("Fly respawned (FLYING).")
 
 func apply_speed_boost() -> void:
@@ -758,3 +776,33 @@ func finish_mating() -> void:
 
 	print("Mating finished!")
 	
+func update_hearts() -> void:
+	if not hearts_container:
+		return
+
+	for i in range(hearts_container.get_child_count()):
+		var heart = hearts_container.get_child(i)
+		# Show only up to max_health
+		heart.visible = (i < max_health)
+		if i < health:
+			heart.texture = heart_full
+		else:
+			heart.texture = heart_broken
+			
+func increase_max_health(amount: int = 1) -> void:
+	max_health += amount
+	health = min(health + amount, max_health)   # optionally also heal
+	update_hearts()
+	
+func apply_heart_boost() -> void:
+	if health < max_health:
+		health += 1
+		update_hearts()
+		print("Heart mended!")
+	elif max_health < max_heart_capacity:
+		max_health += 1
+		health += 1
+		update_hearts()
+		print("New heart added!")
+	else:
+		print("No room for more hearts!")

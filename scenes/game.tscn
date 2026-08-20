@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://cdigo6v4hqtgp"]
+
+[ext_resource type="Script" uid="uid://cco00h660mc0e" path="res://scripts/test_level.gd" id="1_gee14"]
+[ext_resource type="PackedScene" uid="uid://7h5mmjjgn5c8" path="res://scenes/platform.tscn" id="2_0tnpc"]
+[ext_resource type="PackedScene" uid="uid://4i81gl7adgsh" path="res://scenes/player.tscn" id="3_vtaks"]
+[ext_resource type="Script" uid="uid://de30uwe0kujr0" path="res://scripts/platform_manager.gd" id="4_kvpfn"]
+[ext_resource type="PackedScene" uid="uid://bc4jhx7vo8cvk" path="res://scenes/enemy_spawner.tscn" id="5_dinhu"]
+[ext_resource type="FontFile" uid="uid://xhggxobabo8q" path="res://assets/fonts/Numbs-Regular.ttf" id="6_kvuet"]
+[ext_resource type="Texture2D" uid="uid://v08sjcd1g5pq" path="res://assets/fly/lives/heart_full.PNG" id="7_trtic"]
+[ext_resource type="AudioStream" uid="uid://bdrbq4p24vd5w" path="res://assets/audio/enemy-flying.wav" id="8_ir15t"]
+
+[node name="Node2D" type="Control" unique_id=804871185]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gee14")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=2014576089]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Platform" parent="." unique_id=1887111216 instance=ExtResource("2_0tnpc")]
+force_variant = 1
+
+[node name="Fly" parent="." unique_id=1584304132 node_paths=PackedStringArray("buff_label", "hearts_container") instance=ExtResource("3_vtaks")]
+z_index = 1
+buff_label = NodePath("../CanvasLayer/BuffLabel")
+hearts_container = NodePath("../CanvasLayer/HBoxContainer")
+
+[node name="PlatformManager" type="Node" parent="." unique_id=1790871871]
+script = ExtResource("4_kvpfn")
+starting_platform_path = NodePath("../Platform")
+
+[node name="EnemySpawner" parent="." unique_id=81393025 instance=ExtResource("5_dinhu")]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1210715482]
+layer = 10
+
+[node name="BuffLabel" type="Label" parent="CanvasLayer" unique_id=1339001576]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -800.0
+offset_top = 20.0
+offset_right = -650.0
+offset_bottom = 80.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("6_kvuet")
+theme_override_font_sizes/font_size = 64
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer" unique_id=2008385858]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 853.0
+offset_bottom = 278.0
+scale = Vector2(0.2, 0.2)
+alignment = 1
+
+[node name="Heart1" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=164903610]
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart2" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=1950784762]
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart3" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=1089310698]
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart4" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=1187007733]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart5" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=2087507096]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart6" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=556298408]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="EnemyBuzz" type="AudioStreamPlayer2D" parent="." unique_id=2047817458]
+stream = ExtResource("8_ir15t")
+volume_db = 10.0

@@ -1,8 +1,8 @@
 Focus:
-Impregnation
+hearts
 
 Next focus:
-hearts, lives from food, pause
+lives from food, pause, "dead" (draw a picture of a dead fly)
 
 
 Fly Game ideas

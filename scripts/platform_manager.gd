@@ -12,7 +12,7 @@ extends Node
 
 @export var food_scene: PackedScene = preload("res://scenes/food.tscn")
 @export var female_fly_scene: PackedScene = preload("res://scenes/female_fly.tscn")
-@export var female_fly_spawn_chance: float = 1.0   # 30% chance to spawn female fly
+@export var female_fly_spawn_chance: float = 0.3   # 30% chance to spawn female fly
 
 var spawn_interval: float = 20.0
 var spawn_timer: float = 0.0
@@ -118,7 +118,15 @@ func spawn_platform() -> void:
 			# Spawn food
 			var food = food_scene.instantiate()
 			food.position = Vector2(0, -20)
-			food.buff_type = "shoot" if randf() < 0.5 else "speed"
+			
+			var r = randf()
+			if r < 0.33:
+				food.buff_type = "speed"
+			elif r < 0.66:
+				food.buff_type = "shoot"
+			else:
+				food.buff_type = "heart"
+				
 			new_platform.add_child(food)
 			print("Food spawned on platform at ", new_platform.position + food.position)
 
