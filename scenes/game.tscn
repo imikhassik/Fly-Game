@@ -7,7 +7,9 @@
 [ext_resource type="PackedScene" uid="uid://bc4jhx7vo8cvk" path="res://scenes/enemy_spawner.tscn" id="5_dinhu"]
 [ext_resource type="FontFile" uid="uid://xhggxobabo8q" path="res://assets/fonts/Numbs-Regular.ttf" id="6_kvuet"]
 [ext_resource type="Texture2D" uid="uid://v08sjcd1g5pq" path="res://assets/fly/lives/heart_full.PNG" id="7_trtic"]
+[ext_resource type="FontFile" uid="uid://b0sps2wff281l" path="res://assets/fonts/Fly-Regular.ttf" id="8_0tnpc"]
 [ext_resource type="AudioStream" uid="uid://bdrbq4p24vd5w" path="res://assets/audio/enemy-flying.wav" id="8_ir15t"]
+[ext_resource type="Script" uid="uid://cqf8b74mtmekc" path="res://scripts/pause_overlay.gd" id="8_vtaks"]
 
 [node name="Node2D" type="Control" unique_id=804871185]
 layout_mode = 3
@@ -41,6 +43,7 @@ starting_platform_path = NodePath("../Platform")
 [node name="EnemySpawner" parent="." unique_id=81393025 instance=ExtResource("5_dinhu")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1210715482]
+process_mode = 3
 layer = 10
 
 [node name="BuffLabel" type="Label" parent="CanvasLayer" unique_id=1339001576]
@@ -96,6 +99,31 @@ visible = false
 layout_mode = 2
 texture = ExtResource("7_trtic")
 stretch_mode = 3
+
+[node name="PauseOverlay" type="Control" parent="CanvasLayer" unique_id=1782267370]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_vtaks")
+
+[node name="PauseLabel" type="Label" parent="CanvasLayer/PauseOverlay" unique_id=1734452071]
+modulate = Color(0, 0, 0, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("8_0tnpc")
+theme_override_font_sizes/font_size = 72
+text = "pause"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="EnemyBuzz" type="AudioStreamPlayer2D" parent="." unique_id=2047817458]
 stream = ExtResource("8_ir15t")

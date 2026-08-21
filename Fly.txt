@@ -1,8 +1,8 @@
 Focus:
-hearts
+
 
 Next focus:
-lives from food, pause, "dead" (draw a picture of a dead fly)
+"dead" (draw a picture of a dead fly), restart
 
 
 Fly Game ideas
