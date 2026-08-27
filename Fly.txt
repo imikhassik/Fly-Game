@@ -1,10 +1,3 @@
-Focus:
-
-
-Next focus:
-"dead" (draw a picture of a dead fly), restart
-
-
 Fly Game ideas
 
 Goal of the game
@@ -13,7 +6,7 @@ To make babies a fly lands on a platform with a female fly and impgregnates her.
  
 When the main fly dies, the best of its offspring will continue the family line and increasing of the counter. 
 If the fly is killed before it has made any babies, the family will die.
-The life of one fly is 30 minutes. Its states are improving gradually and it makes better and better babies.
+The life of one fly is 30 minutes. Its stats are improving gradually and it makes better and better babies.
 
 The game can go on forever and the users will have a leaderboard with current fly they have and the number of descendants along with the linear history of the family (fly pictures and how many babies each couple made). The flies will start out all the same but will end up pretty unique in stats and appearance. Possibly we'll have a server to pvp the flies.
 The descendant flies can be named, but every one starts out with the first fly named Вова (Boba).
@@ -25,9 +18,8 @@ Sometime the platform will contain a male fly and if my fly tries to mate with i
 
 Еда
 1. Food should have effect on fly. Like consuming cold (blue) food makes it cough mid flight, beans make it fart mid flight, etc.
-2. Some food needs to add life
-3. Муха становится тяжелой, когда поест, и все легче со временем. То есть уворачиваться от врагов легче, но есть шанс упасть в голодный обморок.
-4. Нужен индикатор полноты мухиного живота
+2. Муха становится тяжелой, когда поест, и все легче со временем. То есть уворачиваться от врагов легче, но есть шанс упасть в голодный обморок.
+3. Нужен индикатор полноты мухиного живота
 
 Ловушки:
 1. If you linger on a platform, you'll be squished by мухобойка
@@ -48,7 +40,56 @@ This means i need to focus on animation and sounds for the fly to start with.
 I want to take steam by storm of how cute and satisfying the fly game is.
 
 
+Let's break this down into a clear ordered feature list with dependencies. Each step builds on the previous, so we'll start with the foundation and add layers.
 
 
+
+Ordered Feature List
+1. Stat System Core
+What: Define and store fly stats (spd, rof, max_hp, cap_hp), generation scores (gen_spd, gen_rof, gen_hp), and the logic to update them from food buffs.
+Why: Everything else depends on these numbers. The game must track current stats, max caps, and accumulated gen scores.
+
+2. Baby Inheritance Logic
+What: Implement the baby stat formula, birth chance decay (after 3 babies), and the "best baby" selection when the fly dies (based on sum of stats).
+Why: This is the core of the lineage system. It requires the stat system (step 1) to be complete.
+
+3. Female Fly Stats
+What: Each female fly gets randomized stats (e.g., between 30%–80% of the player's current stats, with some variation). Add a UI tooltip or popup that shows her stats when the player is near (e.g., press a key to inspect).
+Why: The player needs to make an informed decision. This is a new UI layer but depends on stat definitions.
+
+4. Mating with Female Stats
+What: When mating, the baby's stats are influenced by the female's stats. Example formula:
+baby_stat = (player_stat * 0.7 + female_stat * 0.3) * (0.8–1.2) + gen_bonus
+This gives the female a ~30% influence. If the female has poor stats, it hurts the baby. If she has good stats, it helps.
+Why: This adds strategy and makes the female stats meaningful.
+
+5. Random Collectibles ("Sparkles")
+What: Small floating objects (e.g., glowing motes) that spawn randomly on platforms or in the air. Collecting one gives a tiny permanent boost:
+
+50% chance to add 0.001 to a random main stat (spd, rof, max_hp, cap_hp)
+
+50% chance to add 0.001 to a random generation score (gen_spd, gen_rof, gen_hp)
+They despawn after a few seconds unless collected.
+Why: Fills the "empty" feeling while flying. Gives a reason to fly around even when not fighting.
+
+6. Enemy Targeting of Collectibles
+What: When the fly is landed (and not in danger), enemies will ignore the fly and instead chase the nearest collectible. When an enemy reaches a collectible, it destroys it (the player loses the chance).
+Why: This makes the landing phase more interesting and gives the player a reason to stay active (or risk losing boosts).
+
+7. Baby Born Popup
+What: A simple UI notification that says "Baby Born!" with the baby's stats (or summary). Could be a toast message.
+Why: Already agreed; it's a small UI addition that depends on the baby logic.
+
+8. Lineage Database (SQLite)
+What: Create the SQLite tables (runs, babies, lineage) and implement saving/loading of stats, family tree, and run history.
+Why: This is the persistent storage layer. It should be built after the stat and baby logic are stable so we know exactly what to save.
+
+9. Game Over / Continue Flow
+What: The screens and logic for "Game Over" (no babies) vs "Continue with best baby" (if babies exist). Includes displaying the best baby's stats and a "Continue" button.
+Why: This is the end‑of‑run experience. It ties together the baby selection and lineage storage.
+
+10. UI Polish
+What: Display current stats, generation scores, baby count, and the 30‑minute timer on the HUD. Possibly a lineage tree viewer (simple list).
+Why: This wraps everything into a playable experience. It can be done incrementally but should be near the end to avoid rework.
 
 

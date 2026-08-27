@@ -6,6 +6,9 @@ signal took_off
 enum FlyState { FLYING, LANDING, LANDED, TAKING_OFF }
 var state: FlyState = FlyState.LANDED
 
+# ============================================================
+#  CORE MOVEMENT STATS
+# ============================================================
 @export var rotation_speed: float = 3.0
 @export var walk_speed: float = 150.0
 @export var forward_speed: float = 60.0
@@ -15,41 +18,66 @@ var state: FlyState = FlyState.LANDED
 @export var landing_scale_speed: float = 0.25
 @export var take_off_scale_speed: float = 0.25
 @export var takeoff_forward_speed: float = 150.0
-@export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
-@export var shoot_sound: AudioStreamPlayer2D
-@export var flying_sound: AudioStreamPlayer2D
-@export var max_health: int = 3
-@export var invincibility_duration: float = 1.0
 
-# ----- SHOOT COOLDOWN -----
-@export var shoot_cooldown: float = 1.5
-
-# ----- BOUNDARY PUSH (velocity‑based) -----
-@export var boundary_margin: float = 100.0
-@export var boundary_push_strength: float = 400.0
-
-# ----- DEFORMATION (stretch & squash) -----
+# ============================================================
+#  DEFORMATION (Visual)
+# ============================================================
 @export var min_fps: float = 8.0
 @export var max_fps: float = 48.0
 @export var stretch_amount: float = 0.13
 @export var squash_amount: float = 0.10
+@export var boost_deformation_multiplier: float = 1.5
 
-# ----- LEG TRANSITION -----
+# ============================================================
+#  LEG TRANSITION
+# ============================================================
 @export var leg_transition_duration: float = 0.3
 @export var turn_animation_speed: float = 1.0
 
-# ----- BUFFS -----
-@export var speed_boost_multiplier: float = 2.0   # e.g., 1.5 = 50% faster
+# ============================================================
+#  COMBAT STATS
+# ============================================================
+@export var projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
+@export var shoot_sound: AudioStreamPlayer2D
+@export var shoot_cooldown: float = 1.5
+
+# ============================================================
+#  HEALTH & HEARTS
+# ============================================================
+@export var max_health: int = 3
+@export var invincibility_duration: float = 1.0
+@export var max_heart_capacity: int = 6
+@export var hearts_container: HBoxContainer = null
+
+# ============================================================
+#  BUFFS
+# ============================================================
+@export var speed_boost_multiplier: float = 2.0
 @export var speed_boost_duration: float = 25.0
-@export var shoot_boost_cooldown: float = 0.2    # reduced cooldown during buff
+@export var shoot_boost_cooldown: float = 0.2
 @export var shoot_boost_duration: float = 25.0
 
-@export var boost_deformation_multiplier: float = 1.5   # extra stretch/squash when speed boost is active
-
+# ============================================================
+#  UI & AUDIO
+# ============================================================
 @export var buff_label: Label = null
-@export var hearts_container: HBoxContainer = null
-@export var max_heart_capacity: int = 6
+@export var flying_sound: AudioStreamPlayer2D
 
+# ============================================================
+#  BOUNDARY PUSH
+# ============================================================
+@export var boundary_margin: float = 100.0
+@export var boundary_push_strength: float = 400.0
+
+# ============================================================
+#  DEBUG / TESTING
+# ============================================================
+@export var debug_mode: bool = true
+@export var test_stat_increment_amount: float = 1.0
+
+# ============================================================
+#  INTERNAL STATE (Non-exported)
+# ============================================================
 var speed_boost_active: bool = false
 var shoot_boost_active: bool = false
 var speed_boost_timer: float = 0.0
@@ -81,19 +109,22 @@ var mating_timer: float = 0.0
 var mating_duration: float = 3.0
 var female_partner: Node = null
 
+# ============================================================
+#  _ready()
+# ============================================================
 func _ready() -> void:
 	if buff_label:
 		var viewport_size = get_viewport().get_visible_rect().size
 		buff_label.position = Vector2(viewport_size.x - buff_label.size.x - 50, 50)
 		buff_label.visible = false
-	
+
 	fly_visuals_base_scale = $FlyVisuals.scale
 	print("FlyVisuals base scale: ", fly_visuals_base_scale)
-	
+
 	$FlyVisuals.scale = fly_visuals_base_scale * landing_scale_target
 	z_index = 1
 	add_to_group("player")
-	
+
 	initial_max_health = max_health
 	initial_max_heart_capacity = max_heart_capacity
 	health = max_health
@@ -118,18 +149,21 @@ func _ready() -> void:
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.visible = false
 	$FlyVisuals/Legs/WalkingLegs.stop()
-	
+
 	original_forward_speed = forward_speed
 	original_walk_speed = walk_speed
 	original_shoot_cooldown = shoot_cooldown
 
 	call_deferred("_set_initial_position")
-	
+
 	$RearDetector.area_entered.connect(_on_rear_detector_area_entered)
 	$RearDetector.area_exited.connect(_on_rear_detector_area_exited)
-	
+
 	update_hearts()
-	
+
+# ============================================================
+#  POSITION INIT
+# ============================================================
 func _set_initial_position() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
 	var bottom_offset = 150
@@ -137,6 +171,47 @@ func _set_initial_position() -> void:
 	global_position = respawn_position
 	print("Fly repositioned to: ", global_position)
 
+# ============================================================
+#  DEBUG / TEST FUNCTIONS
+# ============================================================
+func test_increment_stat(stat_name: String, amount: float) -> void:
+	match stat_name:
+		"spd":
+			forward_speed += amount
+			print("Speed increased to: %.1f" % forward_speed)
+		"rof":
+			shoot_cooldown = max(0.05, shoot_cooldown - amount)
+			print("Shoot cooldown decreased to: %.2f" % shoot_cooldown)
+		"hp":
+			max_health += int(amount)
+			health = min(health + int(amount), max_health)
+			update_hearts()
+			print("Max health increased to: %d" % max_health)
+		"cap":
+			max_heart_capacity += int(amount)
+			update_hearts()
+			print("Heart capacity increased to: %d" % max_heart_capacity)
+		_:
+			print("Unknown stat: ", stat_name)
+
+func _input(event: InputEvent) -> void:
+	if not debug_mode:
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_1:
+				test_increment_stat("spd", test_stat_increment_amount)
+			KEY_2:
+				test_increment_stat("rof", test_stat_increment_amount * 0.01)
+			KEY_3:
+				test_increment_stat("hp", 1.0)
+			KEY_4:
+				test_increment_stat("cap", 1.0)
+
+# ============================================================
+#  _physics_process()
+# ============================================================
 func _physics_process(delta: float) -> void:
 	var input_vector := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
@@ -301,7 +376,7 @@ func _physics_process(delta: float) -> void:
 			fly_visuals_base_scale.x * squash_factor * facing_direction,
 			fly_visuals_base_scale.y * stretch_factor
 		)
-	
+
 	# ----- BUFF TIMERS -----
 	var any_buff_active = false
 	var label_text = ""
@@ -331,13 +406,15 @@ func _physics_process(delta: float) -> void:
 			buff_label.visible = true
 		else:
 			buff_label.visible = false
-			
+
 	if is_mating:
 		mating_timer -= delta
 		if mating_timer <= 0:
 			finish_mating()
 
-# ----- FLYING STATE -----
+# ============================================================
+#  FLYING STATE
+# ============================================================
 func flying_update(input_vector: Vector2, delta: float, using_controller: bool, raw_stick: Vector2) -> void:
 	var fly_speed: float
 	var move_dir: Vector2
@@ -358,7 +435,7 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 		viewport_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
-		
+
 		if input_vector.x != 0:
 			facing_direction = 1 if input_vector.x >= 0 else -1
 		return
@@ -382,20 +459,24 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 	if input_vector.x != 0:
 		facing_direction = 1 if input_vector.x >= 0 else -1
 
-# ----- TAKEOFF STATE (forward only) -----
+# ============================================================
+#  TAKEOFF STATE
+# ============================================================
 func takeoff_update(_delta: float) -> void:
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
 	velocity = forward_dir * takeoff_forward_speed
 	velocity += boundary_push
 	move_and_slide()
 
-# ----- LANDED (WALKING) STATE -----
+# ============================================================
+#  LANDED (WALKING) STATE
+# ============================================================
 func landed_update(input_vector: Vector2, delta: float, using_controller: bool) -> void:
 	if is_mating:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return
-		
+
 	var move_dir: Vector2
 	var viewport_size: Vector2
 	var should_walk: bool
@@ -411,14 +492,14 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			velocity = Vector2.ZERO
 		velocity += boundary_push
 		move_and_slide()
-			
+
 		viewport_size = get_viewport().get_visible_rect().size
 		position.x = clamp(position.x, 0.0, viewport_size.x)
 		position.y = clamp(position.y, 0.0, viewport_size.y)
-		
+
 		if input_vector.x != 0:
 			facing_direction = 1 if input_vector.x >= 0 else -1
-		
+
 		# ----- LEG ANIMATION (controller) -----
 		should_walk = (input_vector.length() > 0) and _is_head_on_platform()
 		if should_walk:
@@ -429,7 +510,6 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 				$FlyVisuals/Legs/WalkingLegs.modulate.a = 1.0
 			$FlyVisuals/Legs/WalkingLegs.play("walk")
 			var base_fps = $FlyVisuals/Legs/WalkingLegs.sprite_frames.get_animation_speed("walk")
-			# Determine speed: if moving forward (y < 0), use speed-based scaling; else use full speed
 			if input_vector.y < 0:
 				var current_speed = velocity.length()
 				var max_speed = walk_speed
@@ -437,7 +517,6 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 				var target_fps = lerp(6.0, 24.0, t)
 				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 			else:
-				# Turning or moving backward/down – use full forward speed
 				var target_fps = 24.0
 				$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 		else:
@@ -488,7 +567,6 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			var target_fps = lerp(6.0, 24.0, t)
 			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 		else:
-			# Turning or pressing S (down) – use full forward speed
 			var target_fps = 24.0
 			$FlyVisuals/Legs/WalkingLegs.speed_scale = target_fps / base_fps
 	else:
@@ -497,8 +575,10 @@ func landed_update(input_vector: Vector2, delta: float, using_controller: bool) 
 			$FlyVisuals/Legs/WalkingLegs.visible = false
 			$FlyVisuals/Legs/NeutralLegs.visible = true
 			$FlyVisuals/Legs/NeutralLegs.modulate.a = 1.0
-			
-# ----- LANDING STATE -----
+
+# ============================================================
+#  LANDING STATE
+# ============================================================
 func landing_update(delta: float) -> void:
 	vertical_velocity = move_toward(vertical_velocity, 0.0, landing_deceleration * delta)
 	var forward_dir: Vector2 = Vector2(0, -1).rotated(rotation)
@@ -512,41 +592,40 @@ func landing_update(delta: float) -> void:
 			velocity = Vector2.ZERO
 			print("Landed!")
 
-# ----- TRANSITION TRIGGERS -----
+# ============================================================
+#  TRANSITION TRIGGERS
+# ============================================================
 func start_landing() -> void:
 	state = FlyState.LANDING
-	var max_landing_speed = original_forward_speed * 1.2   # a little headroom
+	var max_landing_speed = original_forward_speed * 1.2
 	vertical_velocity = min(velocity.length(), max_landing_speed)
 	landed.emit()
 	_vibrate(1.0, 0.2)
 	if flying_sound and flying_sound.playing:
 		flying_sound.stop()
-	
+
 	$FlyVisuals.scale = fly_visuals_base_scale
 	is_fully_scaled = false
 	current_deformation = 0.0
-	
+
 	$FlyVisuals/Sprite2D.visible = false
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
-	
-	# ----- LEG TRANSITION (Fly -> Neutral) -----
-	# Kill any existing tween to avoid conflicts
+
 	var tween = get_tree().create_tween()
 	tween.kill()
-	
-	# Set initial states
+
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/NeutralLegs.visible = true
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
 	$FlyVisuals/Legs/NeutralLegs.modulate.a = 0.0
-	
+
 	tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/NeutralLegs, "modulate:a", 1.0, leg_transition_duration)
-	
+
 	print("Landing started...")
 
 func start_take_off() -> void:
@@ -555,29 +634,29 @@ func start_take_off() -> void:
 	_vibrate(0.8, 0.3)
 	if flying_sound and not flying_sound.playing:
 		flying_sound.play()
-	
+
 	$FlyVisuals/Sprite2D.visible = false
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
-	
-	# ----- LEG TRANSITION (Neutral/Walk -> Fly) -----
+
 	var tween = get_tree().create_tween()
 	tween.kill()
-	
-	# Determine which legs are currently visible
+
 	var current_legs = $FlyVisuals/Legs/WalkingLegs if $FlyVisuals/Legs/WalkingLegs.visible else $FlyVisuals/Legs/NeutralLegs
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 0.0
 	current_legs.modulate.a = 1.0
-	
+
 	tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(current_legs, "modulate:a", 0.0, leg_transition_duration)
 	tween.tween_property($FlyVisuals/Legs/FlyingLegs, "modulate:a", 1.0, leg_transition_duration)
-	
+
 	print("Taking off...")
 
-# ----- HELPER FUNCTIONS -----
+# ============================================================
+#  HELPER FUNCTIONS
+# ============================================================
 func _get_platform_polygon_global(area: Area2D) -> PackedVector2Array:
 	var platform_collision = area.get_node("CollisionPolygon2D")
 	if not platform_collision:
@@ -663,9 +742,9 @@ func take_damage() -> void:
 	_vibrate(0.5, 0.3)
 	health -= 1
 	print("Fly took damage! Health: ", health)
-	
+
 	update_hearts()
-	
+
 	if health <= 0:
 		respawn()
 	else:
@@ -693,16 +772,15 @@ func respawn() -> void:
 	$FlyVisuals/Sprite2D.visible = false
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
-	
-	# Legs: set flying legs visible with full alpha
+
 	$FlyVisuals/Legs/NeutralLegs.visible = false
 	$FlyVisuals/Legs/WalkingLegs.visible = false
 	$FlyVisuals/Legs/FlyingLegs.visible = true
 	$FlyVisuals/Legs/WalkingLegs.stop()
 	$FlyVisuals/Legs/FlyingLegs.modulate.a = 1.0
-	
+
 	update_hearts()
-	
+
 	print("Fly respawned (FLYING).")
 
 func apply_speed_boost() -> void:
@@ -717,7 +795,10 @@ func apply_shoot_boost() -> void:
 	shoot_boost_timer = shoot_boost_duration
 	shoot_cooldown = shoot_boost_cooldown
 	print("Shoot boost applied!")
-	
+
+# ============================================================
+#  MATING
+# ============================================================
 func _on_rear_detector_area_entered(area: Area2D) -> void:
 	var parent = area.get_parent()
 	if parent.is_in_group("female_fly"):
@@ -726,7 +807,7 @@ func _on_rear_detector_area_entered(area: Area2D) -> void:
 func _on_rear_detector_area_exited(area: Area2D) -> void:
 	if area.get_parent() == female_partner:
 		female_partner = null
-		
+
 func start_mating() -> void:
 	if not female_partner or is_mating:
 		return
@@ -734,26 +815,22 @@ func start_mating() -> void:
 	is_mating = true
 	mating_timer = mating_duration
 
-	# Lock controls
 	state = FlyState.LANDED
 	velocity = Vector2.ZERO
 
-	# Force wings flapping
 	$FlyVisuals/Sprite2D.visible = false
 	$FlyVisuals/Body_Wings.visible = true
 	$FlyVisuals/Body_Wings.play("flying")
 
-	# Tell female to start
 	if female_partner.has_method("start_mating"):
 		female_partner.start_mating()
 
-	# Start vibration
 	_start_mating_vibration()
 
 	print("Mating started!")
 
 func _start_mating_vibration() -> void:
-	var pulse_interval = 1.0 / 3.0   # 3 pulses per second
+	var pulse_interval = 1.0 / 3.0
 	var total_pulses = mating_duration / pulse_interval
 
 	for i in range(int(total_pulses)):
@@ -762,38 +839,38 @@ func _start_mating_vibration() -> void:
 		_vibrate(0.08, 0.5)
 		await get_tree().create_timer(pulse_interval).timeout
 
-	# Always play final vibration when done
 	_vibrate(0.3, 0.7)
 
 func finish_mating() -> void:
 	is_mating = false
 	female_partner = null
 
-	# Stop wing flapping (go back to normal landed state)
 	$FlyVisuals/Sprite2D.visible = true
 	$FlyVisuals/Body_Wings.visible = false
 	$FlyVisuals/Body_Wings.stop()
 
 	print("Mating finished!")
-	
+
+# ============================================================
+#  HEARTS
+# ============================================================
 func update_hearts() -> void:
 	if not hearts_container:
 		return
 
 	for i in range(hearts_container.get_child_count()):
 		var heart = hearts_container.get_child(i)
-		# Show only up to max_health
 		heart.visible = (i < max_health)
 		if i < health:
 			heart.texture = heart_full
 		else:
 			heart.texture = heart_broken
-			
+
 func increase_max_health(amount: int = 1) -> void:
 	max_health += amount
-	health = min(health + amount, max_health)   # optionally also heal
+	health = min(health + amount, max_health)
 	update_hearts()
-	
+
 func apply_heart_boost() -> void:
 	if health < max_health:
 		health += 1
