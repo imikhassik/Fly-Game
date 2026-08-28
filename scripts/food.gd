@@ -79,6 +79,7 @@ func _apply_buff() -> void:
 				player.apply_permanent_speed_increment()
 				player.apply_speed_boost()
 			"shoot":
+				player.apply_permanent_shoot_increment()
 				player.apply_shoot_boost()
 			"heart":
 				player.apply_heart_boost()
