@@ -11,8 +11,10 @@ var state: FlyState = FlyState.LANDED
 # ============================================================
 @export var rotation_speed: float = 3.0
 @export var walk_speed: float = 150.0
-@export var forward_speed: float = 60.0
-@export var up_boost: float = 160.0
+@export var idle_speed: float = 60.0
+@export var speed_boost: float = 160.0
+@export var max_speed_boost: float = 1000.0
+@export var permanent_speed_increment: float = 1.0
 @export var landing_deceleration: float = 200.0
 @export var landing_scale_target: float = 0.75
 @export var landing_scale_speed: float = 0.25
@@ -70,12 +72,6 @@ var state: FlyState = FlyState.LANDED
 @export var boundary_push_strength: float = 400.0
 
 # ============================================================
-#  DEBUG / TESTING
-# ============================================================
-@export var debug_mode: bool = true
-@export var test_stat_increment_amount: float = 1.0
-
-# ============================================================
 #  INTERNAL STATE (Non-exported)
 # ============================================================
 var speed_boost_active: bool = false
@@ -83,7 +79,7 @@ var shoot_boost_active: bool = false
 var speed_boost_timer: float = 0.0
 var shoot_boost_timer: float = 0.0
 
-var original_forward_speed: float
+var original_idle_speed: float
 var original_walk_speed: float
 var original_shoot_cooldown: float
 
@@ -150,7 +146,7 @@ func _ready() -> void:
 	$FlyVisuals/Legs/FlyingLegs.visible = false
 	$FlyVisuals/Legs/WalkingLegs.stop()
 
-	original_forward_speed = forward_speed
+	original_idle_speed = idle_speed
 	original_walk_speed = walk_speed
 	original_shoot_cooldown = shoot_cooldown
 
@@ -170,44 +166,6 @@ func _set_initial_position() -> void:
 	respawn_position = Vector2(screen_size.x / 2, screen_size.y - bottom_offset)
 	global_position = respawn_position
 	print("Fly repositioned to: ", global_position)
-
-# ============================================================
-#  DEBUG / TEST FUNCTIONS
-# ============================================================
-func test_increment_stat(stat_name: String, amount: float) -> void:
-	match stat_name:
-		"spd":
-			forward_speed += amount
-			print("Speed increased to: %.1f" % forward_speed)
-		"rof":
-			shoot_cooldown = max(0.05, shoot_cooldown - amount)
-			print("Shoot cooldown decreased to: %.2f" % shoot_cooldown)
-		"hp":
-			max_health += int(amount)
-			health = min(health + int(amount), max_health)
-			update_hearts()
-			print("Max health increased to: %d" % max_health)
-		"cap":
-			max_heart_capacity += int(amount)
-			update_hearts()
-			print("Heart capacity increased to: %d" % max_heart_capacity)
-		_:
-			print("Unknown stat: ", stat_name)
-
-func _input(event: InputEvent) -> void:
-	if not debug_mode:
-		return
-
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_1:
-				test_increment_stat("spd", test_stat_increment_amount)
-			KEY_2:
-				test_increment_stat("rof", test_stat_increment_amount * 0.01)
-			KEY_3:
-				test_increment_stat("hp", 1.0)
-			KEY_4:
-				test_increment_stat("cap", 1.0)
 
 # ============================================================
 #  _physics_process()
@@ -353,7 +311,7 @@ func _physics_process(delta: float) -> void:
 	if state == FlyState.FLYING or state == FlyState.TAKING_OFF:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
-		var max_speed = forward_speed + up_boost
+		var max_speed = idle_speed + speed_boost
 		var t = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
 		var target_fps = lerp(min_fps, max_fps, t)
 		$FlyVisuals/Body_Wings.speed_scale = target_fps / $FlyVisuals/Body_Wings.sprite_frames.get_animation_speed("flying")
@@ -362,7 +320,7 @@ func _physics_process(delta: float) -> void:
 	if state == FlyState.FLYING and is_fully_scaled:
 		var current_speed = velocity.length()
 		var min_speed = 0.0
-		var max_speed = forward_speed + up_boost
+		var max_speed = idle_speed + speed_boost
 		var target_deformation = clamp((current_speed - min_speed) / (max_speed - min_speed), 0.0, 1.0)
 		current_deformation = move_toward(current_deformation, target_deformation, 2.0 * delta)
 
@@ -387,7 +345,7 @@ func _physics_process(delta: float) -> void:
 		label_text += "%.0f\n" % speed_boost_timer
 		if speed_boost_timer <= 0:
 			speed_boost_active = false
-			forward_speed = original_forward_speed
+			idle_speed = original_idle_speed
 			walk_speed = original_walk_speed
 			print("Speed boost expired.")
 
@@ -426,7 +384,7 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 		rotation += clamp(angle_diff, -rotation_speed * delta, rotation_speed * delta)
 
 		var stick_magnitude = clamp(raw_stick.length(), 0.0, 1.0)
-		fly_speed = forward_speed + up_boost * stick_magnitude
+		fly_speed = idle_speed + speed_boost * stick_magnitude
 
 		move_dir = Vector2(0, -1).rotated(rotation)
 		velocity = move_dir * fly_speed
@@ -443,9 +401,9 @@ func flying_update(input_vector: Vector2, delta: float, using_controller: bool, 
 	if abs(input_vector.x) > 0.01:
 		rotation += input_vector.x * rotation_speed * delta
 
-	fly_speed = forward_speed
+	fly_speed = idle_speed
 	if input_vector.y < 0:
-		fly_speed += up_boost
+		fly_speed += speed_boost
 
 	move_dir = Vector2(0, -1).rotated(rotation)
 	velocity = move_dir * fly_speed
@@ -597,7 +555,7 @@ func landing_update(delta: float) -> void:
 # ============================================================
 func start_landing() -> void:
 	state = FlyState.LANDING
-	var max_landing_speed = original_forward_speed * 1.2
+	var max_landing_speed = original_idle_speed * 1.2
 	vertical_velocity = min(velocity.length(), max_landing_speed)
 	landed.emit()
 	_vibrate(1.0, 0.2)
@@ -786,7 +744,7 @@ func respawn() -> void:
 func apply_speed_boost() -> void:
 	speed_boost_active = true
 	speed_boost_timer = speed_boost_duration
-	forward_speed = original_forward_speed * speed_boost_multiplier
+	idle_speed = original_idle_speed * speed_boost_multiplier
 	walk_speed = original_walk_speed * speed_boost_multiplier
 	print("Speed boost applied!")
 
@@ -795,7 +753,17 @@ func apply_shoot_boost() -> void:
 	shoot_boost_timer = shoot_boost_duration
 	shoot_cooldown = shoot_boost_cooldown
 	print("Shoot boost applied!")
-
+	
+func apply_permanent_speed_increment() -> void:
+	if speed_boost >= max_speed_boost:
+		print("Maximum speed reached.")
+		return
+	
+	speed_boost += permanent_speed_increment
+	idle_speed += permanent_speed_increment * 0.1
+	original_idle_speed = idle_speed
+	print("Permanent speed increment applied: idle_speed=%.1f, speed_boost=%.1f" % [idle_speed, speed_boost])
+	
 # ============================================================
 #  MATING
 # ============================================================

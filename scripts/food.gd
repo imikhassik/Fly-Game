@@ -76,6 +76,7 @@ func _apply_buff() -> void:
 	if player:
 		match buff_type:
 			"speed":
+				player.apply_permanent_speed_increment()
 				player.apply_speed_boost()
 			"shoot":
 				player.apply_shoot_boost()
