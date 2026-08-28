@@ -763,6 +763,21 @@ func apply_permanent_speed_increment() -> void:
 	idle_speed += permanent_speed_increment * 0.1
 	original_idle_speed = idle_speed
 	print("Permanent speed increment applied: idle_speed=%.1f, speed_boost=%.1f" % [idle_speed, speed_boost])
+
+func apply_permanent_shoot_increment() -> void:
+	if shoot_cooldown <= 0.0:
+		print("Minimum shoot cooldown reached.")
+		return
+		
+	var test_shoot_increment = 0.01
+	shoot_cooldown = shoot_cooldown - test_shoot_increment
+	original_shoot_cooldown = shoot_cooldown
+	print("Shoot cooldown permanently decreased to: %.2f" % shoot_cooldown)
+	
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_1:
+			apply_permanent_shoot_increment()
 	
 # ============================================================
 #  MATING
