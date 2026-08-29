@@ -82,5 +82,6 @@ func _apply_buff() -> void:
 				player.apply_permanent_shoot_increment()
 				player.apply_shoot_boost()
 			"heart":
+				player.apply_permanent_health_increment()
 				player.apply_heart_boost()
 	fill_sprite.visible = false

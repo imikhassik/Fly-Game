@@ -31,10 +31,10 @@ grow_vertical = 2
 [node name="Platform" parent="." unique_id=1887111216 instance=ExtResource("2_0tnpc")]
 force_variant = 1
 
-[node name="Fly" parent="." unique_id=1584304132 node_paths=PackedStringArray("buff_label", "hearts_container") instance=ExtResource("3_vtaks")]
+[node name="Fly" parent="." unique_id=1584304132 node_paths=PackedStringArray("hearts_container", "buff_label") instance=ExtResource("3_vtaks")]
 z_index = 1
-buff_label = NodePath("../CanvasLayer/BuffLabel")
 hearts_container = NodePath("../CanvasLayer/HBoxContainer")
+buff_label = NodePath("../CanvasLayer/BuffLabel")
 
 [node name="PlatformManager" type="Node" parent="." unique_id=1790871871]
 script = ExtResource("4_kvpfn")
@@ -95,6 +95,30 @@ texture = ExtResource("7_trtic")
 stretch_mode = 3
 
 [node name="Heart6" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=556298408]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart7" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=1425965449]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart8" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=976513892]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart9" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=2100860448]
+visible = false
+layout_mode = 2
+texture = ExtResource("7_trtic")
+stretch_mode = 3
+
+[node name="Heart10" type="TextureRect" parent="CanvasLayer/HBoxContainer" unique_id=536698203]
 visible = false
 layout_mode = 2
 texture = ExtResource("7_trtic")

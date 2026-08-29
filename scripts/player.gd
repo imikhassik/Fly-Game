@@ -51,6 +51,8 @@ var state: FlyState = FlyState.LANDED
 @export var invincibility_duration: float = 1.0
 @export var max_heart_capacity: int = 6
 @export var hearts_container: HBoxContainer = null
+@export var initial_heart_amount_increment: float = 0.025
+@export var total_heart_amount_increment: float = 0.025
 
 # ============================================================
 #  BUFFS
@@ -87,6 +89,8 @@ var original_shoot_cooldown: float
 var health: int
 var initial_max_health: int
 var initial_max_heart_capacity: int
+var initial_heart_progress: float = 0.0
+var total_heart_progress: float = 0.0
 var invincible: bool = false
 var heart_full: Texture = preload("res://assets/fly/lives/heart_full.PNG")
 var heart_broken: Texture = preload("res://assets/fly/lives/heart_broken.PNG")
@@ -774,6 +778,31 @@ func apply_permanent_shoot_increment() -> void:
 	original_shoot_cooldown = shoot_cooldown
 	print("Shoot cooldown permanently decreased to: %.2f" % shoot_cooldown)
 	
+func apply_permanent_health_increment() -> void:
+	if max_health >= max_heart_capacity:
+		print("Max health already at capacity.")
+		return
+
+	initial_heart_progress += initial_heart_amount_increment
+	if initial_heart_progress >= 1.0:
+		max_health += 1
+		health = min(health + 1, max_health)
+		initial_heart_progress -= 1.0
+		update_hearts()
+		print("Max health increased to: %d" % max_health)
+
+func apply_permanent_capacity_increment() -> void:
+	if max_heart_capacity >= 10:
+		print("Max heart capacity already at maximum.")
+		return
+
+	total_heart_progress += total_heart_amount_increment
+	if total_heart_progress >= 1.0:
+		max_heart_capacity += 1
+		total_heart_progress -= 1.0
+		update_hearts()
+		print("Max heart capacity increased to: %d" % max_heart_capacity)
+	
 # ============================================================
 #  MATING
 # ============================================================
@@ -826,7 +855,9 @@ func finish_mating() -> void:
 	$FlyVisuals/Sprite2D.visible = true
 	$FlyVisuals/Body_Wings.visible = false
 	$FlyVisuals/Body_Wings.stop()
-
+	
+	apply_permanent_capacity_increment()
+	
 	print("Mating finished!")
 
 # ============================================================
